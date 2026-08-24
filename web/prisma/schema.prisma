@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Gender {
+  boy
+  girl
+}
+
+enum TokenPurpose {
+  guest_login
+  admin_login
+}
+
+model AccessCode {
+  id        String   @id
+  codeHash  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("access_codes")
+}
+
+model Participant {
+  id              String      @id @default(cuid())
+  name            String?
+  email           String      @unique
+  emailVerifiedAt DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  prediction      Prediction?
+  addressCard     AddressCard?
+  magicTokens     MagicLinkToken[]
+
+  @@map("participants")
+}
+
+model Prediction {
+  id               String      @id @default(cuid())
+  participantId    String      @unique
+  participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  gender           Gender
+  weightGrams      Int
+  heightCm         Int
+  predictedBirthAt DateTime
+  editCount        Int         @default(0)
+  lockedAt         DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([participantId])
+  @@map("predictions")
+}
+
+model AddressCard {
+  id            String      @id @default(cuid())
+  participantId String      @unique
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  recipientName String
+  street        String
+  houseNumber   String
+  postalCode    String
+  city          String
+  country       String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([participantId])
+  @@map("address_cards")
+}
+
+model MagicLinkToken {
+  id         String       @id @default(cuid())
+  email      String
+  tokenHash  String
+  purpose    TokenPurpose
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime     @default(now())
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  @@index([email, purpose, expiresAt])
+  @@index([tokenHash])
+  @@map("magic_link_tokens")
+}
+
+model AdminAllowlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("admin_allowlist")
+}

@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f3fbf1;
+  --foreground: #244a37;
+  --surface: #fffdf8;
+  --surface-soft: #ebf9ee;
+  --primary: #7ccf73;
+  --primary-deep: #4a9d61;
+  --primary-soft: #ebf9ee;
+  --accent: #f8d88b;
+  --accent-soft: #fff4d4;
+  --line: #cfecc7;
+  --shadow: rgba(61, 94, 72, 0.14);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-nunito);
+  --font-serif: var(--font-lora);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(166, 229, 163, 0.7) 0%, transparent 24%),
+    radial-gradient(circle at 85% 12%, rgba(248, 216, 139, 0.7) 0%, transparent 23%),
+    linear-gradient(180deg, #f3fbf1 0%, #edf8ef 100%);
+  color: var(--foreground);
+  font-family: var(--font-nunito), sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(124, 207, 115, 0.18) 0 10px, transparent 11px),
+    radial-gradient(circle at 40% 75%, rgba(248, 216, 139, 0.2) 0 12px, transparent 13px),
+    radial-gradient(circle at 72% 32%, rgba(159, 219, 168, 0.18) 0 9px, transparent 10px),
+    radial-gradient(circle at 90% 70%, rgba(255, 255, 255, 0.6) 0 8px, transparent 9px);
+  background-size: 220px 220px;
+  opacity: 0.9;
+}
+
+.baby-card {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid rgba(124, 207, 115, 0.35);
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 2rem;
+  box-shadow: 0 20px 45px var(--shadow);
+}
+
+.baby-card::before {
+  content: "";
+  position: absolute;
+  inset: auto -20% -30% auto;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(124, 207, 115, 0.12);
+}
+
+.baby-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #80d57b 0%, #5bb86b 100%);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(84, 157, 100, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.baby-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(84, 157, 100, 0.32);
+  filter: brightness(1.02);
+}
+
+.baby-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.25rem;
+  border: 2px solid rgba(124, 207, 115, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--foreground);
+  font-weight: 700;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.baby-button-secondary:hover {
+  background: rgba(235, 249, 238, 0.95);
+  transform: translateY(-1px);
+}
+
+.baby-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1.5px solid rgba(124, 207, 115, 0.4);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.8rem 0.9rem;
+  color: var(--foreground);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.baby-input:focus {
+  border-color: rgba(74, 157, 97, 0.8);
+  box-shadow: 0 0 0 4px rgba(124, 207, 115, 0.18);
+}
+
+.baby-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 9999px;
+  background: rgba(235, 249, 238, 0.9);
+  border: 1px solid rgba(124, 207, 115, 0.35);
+  color: var(--primary-deep);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.8rem;
+}
+
+.baby-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #fdf4d8 0%, #f5e6ab 100%);
+  border: 1px solid rgba(248, 216, 139, 0.5);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.7);
+}
+
+@media (max-width: 640px) {
+  .baby-card::before {
+    width: 130px;
+    height: 130px;
+  }
+}
