@@ -73,6 +73,9 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
         </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
+          <a href="/admin/adressen" className="baby-button-secondary px-4 py-2 text-sm">
+            📮 Ingevulde adressen
+          </a>
           <a href="/api/admin/export" className="baby-button-secondary px-4 py-2 text-sm">
             ⬇️ CSV-export
           </a>
