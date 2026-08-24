@@ -1,0 +1,28 @@
+# Root repository defaults
+
+# Node / package manager artifacts
+/package-lock.json
+npm-debug.log*
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# General build and generated output
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Local AI/developer tooling
+.claude/
+.agents/
+.windsurf/
