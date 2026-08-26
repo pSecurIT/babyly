@@ -12,7 +12,7 @@
 4. Overzichtstabel met voorspellingen.
 
 ## Beheeracties
-1. CSV-export van relevante gegevens.
+1. CSV-export van alleen relevante deelnemer-, voorspelling- en adresgegevens.
 2. Deelnemer verwijderen inclusief gekoppelde records.
 3. Prediction resetten zodat deelnemer opnieuw kan indienen.
 4. Handmatige purge van alle deelnemergegevens.
@@ -21,3 +21,11 @@
 1. Geen adminrechten vanuit clientclaims.
 2. Alle adminroutes server-side autoriseren.
 3. Auditlog voor verwijder, reset en export-acties.
+
+## Exportbeveiliging
+
+De exportroute is uitsluitend toegankelijk voor een admin-sessie. De response
+wordt niet gecachet, verwijst niet door naar de vorige pagina en gebruikt
+`nosniff`. CSV-velden die als spreadsheetformule kunnen worden geïnterpreteerd
+worden geneutraliseerd. De route en deze eigenschappen zijn getest; periodieke
+controle van admin-toegang blijft een operationele verantwoordelijkheid.

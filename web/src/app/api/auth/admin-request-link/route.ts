@@ -5,6 +5,7 @@ import { sendMagicLink } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateRandomToken, sha256Hex } from "@/lib/security";
 import { adminAccessRequestSchema } from "@/lib/validation";
+import { isValidCsrfToken } from "@/lib/csrf";
 
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -22,6 +23,13 @@ function genericRedirect(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const env = getEnv();
   const formData = await request.formData();
+  const csrfToken = formData.get("csrfToken");
+  if (!isValidCsrfToken(
+    typeof csrfToken === "string" ? csrfToken : null,
+    request.cookies.get("baby_csrf")?.value,
+  )) {
+    return genericRedirect(request);
+  }
 
   // Honeypot: bots tend to fill every field, humans never see this one.
   if (formData.get("website")) {
@@ -42,7 +50,7 @@ export async function POST(request: NextRequest) {
   const ipLimit = rateLimit(`admin-mail:${ip}`, 5, 30 * 60 * 1000);
   const emailLimit = rateLimit(`admin-mail:${email}`, 5, 30 * 60 * 1000);
   if (!ipLimit.allowed || !emailLimit.allowed) {
-    console.warn(`[admin-request-link] rate limited ip=${ip}`);
+    console.warn("[admin-request-link] rate_limited");
     return genericRedirect(request);
   }
 

@@ -9,6 +9,7 @@ const envSchema = z.object({
   MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().min(5).max(60).default(15),
   EMAIL_DELIVERY_MODE: z.enum(["console", "provider"]).default("console"),
   ADMIN_EMAILS: z.string().default(""),
+  PRIVACY_CONTACT_EMAIL: z.string().email(),
 }).superRefine((values, ctx) => {
   if (
     process.env.NODE_ENV === "production" &&

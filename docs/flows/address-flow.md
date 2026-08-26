@@ -26,3 +26,11 @@ Gebruiker laat adres achter voor geboortekaart, veilig en eenmalig per e-mailadr
 ## Foutgevallen
 1. Ongeldige of incomplete velden: veldspecifieke validatiefouten.
 2. Dubbele inzending: blokkeren of idempotent upsert volgens gekozen beleid.
+
+## Implementatiedetails
+
+1. Het adresformulier bevat een servergegenereerd CSRF-token.
+2. De server koppelt het adres uitsluitend aan de geverifieerde
+   participant-sessie en valideert alle velden opnieuw.
+3. Na opslag toont de bedankpagina de optionele voorspelling-cross-prompt; de
+   ondertekende sessie voorkomt herhaling binnen dezelfde sessie.

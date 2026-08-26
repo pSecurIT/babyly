@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockReadGuestSession, mockPrisma } = vi.hoisted(() => {
+const { mockMarkCrossPromptSeen, mockReadGuestSession, mockPrisma } = vi.hoisted(() => {
+  const mockMarkCrossPromptSeen = vi.fn();
   const mockReadGuestSession = vi.fn();
   const mockPrisma = {
     $transaction: vi.fn(),
@@ -18,8 +19,13 @@ const { mockReadGuestSession, mockPrisma } = vi.hoisted(() => {
     },
   };
 
-  return { mockReadGuestSession, mockPrisma };
+  return { mockMarkCrossPromptSeen, mockReadGuestSession, mockPrisma };
 });
+
+vi.mock("@/lib/csrf", () => ({
+  csrfTokenFromForm: vi.fn(() => "valid-csrf-token"),
+  validateCsrfToken: vi.fn().mockResolvedValue(true),
+}));
 
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => {
@@ -28,6 +34,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/session", () => ({
+  markCrossPromptSeen: mockMarkCrossPromptSeen,
   readGuestSession: mockReadGuestSession,
 }));
 
@@ -40,6 +47,7 @@ import { submitAddressAction, submitPredictionAction } from "@/app/deelnemen/act
 describe("business rules en flowafhandeling", () => {
   beforeEach(() => {
     mockReadGuestSession.mockReset();
+    mockMarkCrossPromptSeen.mockReset();
     mockPrisma.$transaction.mockReset();
     mockPrisma.participant.update.mockReset();
     mockPrisma.prediction.findUnique.mockReset();
@@ -84,6 +92,7 @@ describe("business rules en flowafhandeling", () => {
         }),
       }),
     );
+    expect(mockMarkCrossPromptSeen).toHaveBeenCalledWith("predictionToAddress");
   });
 
   it("laat een eerste wijziging toe en blokkeert de tweede wijziging", async () => {
@@ -134,5 +143,27 @@ describe("business rules en flowafhandeling", () => {
       "/deelnemen/adres/formulier?error=bestaat",
     );
     expect(mockPrisma.addressCard.create).not.toHaveBeenCalled();
+  });
+
+  it("maakt een adres aan en stuurt naar de bedankpagina", async () => {
+    mockReadGuestSession.mockResolvedValue({ sub: "participant-123", scope: "guest", exp: 9999999999 });
+    mockPrisma.addressCard.findUnique.mockResolvedValue(null);
+    mockPrisma.addressCard.create.mockResolvedValue(undefined);
+
+    const formData = new FormData();
+    formData.set("recipientName", "Jan Jansen");
+    formData.set("street", "Kerkstraat");
+    formData.set("houseNumber", "12A");
+    formData.set("postalCode", "1234 AB");
+    formData.set("city", "Utrecht");
+    formData.set("country", "Nederland");
+
+    await expect(submitAddressAction(formData)).rejects.toThrow(
+      "/deelnemen/adres/bedankt",
+    );
+    expect(mockPrisma.addressCard.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ participantId: "participant-123" }),
+    });
+    expect(mockMarkCrossPromptSeen).toHaveBeenCalledWith("addressToPrediction");
   });
 });

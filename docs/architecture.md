@@ -18,6 +18,16 @@ Eenvoudige, veilige Nederlandstalige website met twee losse gebruikersflows:
 3. Database wordt alleen via backend benaderd.
 4. E-maillinks zijn tijdelijk en eenmalig.
 
+## Runtime security
+
+1. Next middleware zet de CSRF-cookie voordat server-rendered formulieren
+	worden opgebouwd.
+2. Server Components lezen de token alleen; mutaties valideren de token
+	server-side.
+3. De Next-configuratie zet centrale security headers op alle routes.
+4. Playwright global setup kan optioneel een geïsoleerde E2E-deelnemer en
+	tijdelijke sessie aanmaken en na afloop verwijderen.
+
 ## Identity En Sessies
 1. Deelnemer identificeert via geverifieerde e-mail.
 2. Sessiecookie bevat minimale claims en is HttpOnly/Secure/SameSite.
@@ -39,3 +49,5 @@ Eenvoudige, veilige Nederlandstalige website met twee losse gebruikersflows:
 1. HTTPS verplicht.
 2. Secrets via environment variables.
 3. Logging zonder PII en zonder tokens.
+4. GitHub Actions gebruikt een ephemeral PostgreSQL-service voor volledige
+	database-backed E2E-tests; productiecredentials worden daar niet gebruikt.

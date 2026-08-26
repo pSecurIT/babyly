@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import { readGuestSession } from "@/lib/session";
 import { submitAddressAction } from "@/app/deelnemen/actions";
+import { getCsrfToken } from "@/lib/csrf";
 
 export default async function AddressFormPage() {
   const session = await readGuestSession();
   if (!session) {
     redirect("/?auth=1");
   }
+  const csrfToken = await getCsrfToken();
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-16">
@@ -22,6 +24,7 @@ export default async function AddressFormPage() {
         <p className="mt-3 text-[#3c594b]">Laat je adres achter, dan kunnen we het kaartje opsturen.</p>
 
         <form action={submitAddressAction} className="mt-8 space-y-4">
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Naam ontvanger</span>
             <input required name="recipientName" className="baby-input" />

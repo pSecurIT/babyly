@@ -58,6 +58,7 @@ SESSION_SECRET="minimaal-32-willekeurige-tekens"
 MAGIC_LINK_TTL_MINUTES="15"
 EMAIL_DELIVERY_MODE="console"
 ADMIN_EMAILS="ouder1@example.com,ouder2@example.com"
+PRIVACY_CONTACT_EMAIL="privacy@example.com"
 ```
 
 ### Starten
@@ -86,49 +87,3 @@ npx prisma db push
 cd E:\code\Baby\web
 npx prisma dev stop default
 ```
-
-## Gap assessment tegen plan.md
-
-De beoordeling hieronder vergelijkt de huidige status met de doelen in [plan.md](../plan.md).
-
-| Onderdeel | Status | Opmerking |
-| --- | --- | --- |
-| Scope en requirements vastleggen | Gedeeltelijk | De app heeft de kernfunctionaliteit, maar geen volledig formele requirements- of acceptatie-dossier in de repo dat volledig voldoet aan het plan. |
-| Datamodel voor participant/prediction/address/magic token/admin allowlist | Compleet | Prisma schema bevat alle kernmodellen en relaties. |
-| Security-architectuur | Gedeeltelijk | De code bevat hashing, rate limiting, sessies, one-time tokens, admin allowlist en inputvalidatie, maar de planmatige threat review / security-controls documentatie is nog niet volledig afgedekt. |
-| Voorspelflow | Compleet | Invoer, validatie, create/update, one-edit regel, locked state en bedankt pagina zijn aanwezig. |
-| Adresflow | Compleet | Adresinvoer, unieke adreskaart per deelnemer en redirect na opslag zijn geïmplementeerd. |
-| Cross-prompting | Gedeeltelijk | De app bevat een cross-prompt/redirect-patroon na succesvolle inzending, maar de ervaring is niet volledig uitgewerkt als een afgeronde, expliciete "volgende stap"-flow uit het plan. |
-| Admin auth + dashboard | Compleet | Admin login, sessiecontrole, dashboard, reset en purgen zijn aanwezig. |
-| CSV-export | Compleet | Admin export endpoint genereert een CSV met deelnemerdata. |
-| Purge/delete/reset acties | Compleet | De admin acties voor reset, verwijderen en volledige purge zijn actief. |
-| Privacy/anti-enumeration gedrag | Gedeeltelijk | De app probeert privacy te beschermen, maar formele documentatie en volledige negatieve-testcases ontbreken. |
-| Teststrategie en security tests | Gedeeltelijk | Er zijn tests aanwezig voor validatie, acties en sessies, maar geen volledig testmatrix volgens het plan. |
-| Documentatie / handoff pakket | Gedeeltelijk | Er bestaan docs in de repo, maar de implementatie is nog niet volledig “plan-complete” in de zin van het handoffpakket in [plan.md](../plan.md). |
-
-## Conclusie
-
-De meeste kernfeatures zijn al gebouwd en werkend:
-
-- magische linkauthenticatie;
-- beide deelnemerflows;
-- admin-beheer;
-- export en data purge.
-
-Wat nog niet volledig afgerond is volgens het plan, is vooral het laatste “release-ready” niveau:
-
-- volledige documentatie en architectuurafstemming;
-- expliciete cross-prompt UX voor beide flows;
-- uitgebreide security review en testmatrix;
-- volledig traceerbare mapping van elke planvereiste naar geïmplementeerde code.
-
-## Aanbevolen volgende stappen
-
-1. Controleer de docs in de map `docs/` en vul ontbrekende secties aan voor architecture, security controls en flows.
-2. Maak de cross-prompting meer expliciet in de UX en in de redirect logic.
-3. Vervang de huidige ad-hoc testset door een complete testmatrix volgens de planvereisten.
-4. Verifieer de admin- en privacyregels met security-focused tests.
-
-## Opmerking
-
-Voer de app altijd vanuit de `web`-map uit, niet vanuit de repo-root, anders krijg je de bekende `ENOENT`-fout omdat er in de root geen `package.json` staat.

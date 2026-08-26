@@ -1,14 +1,18 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { csrfTokenFromForm, validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/db";
-import { readGuestSession } from "@/lib/session";
+import { markCrossPromptSeen, readGuestSession } from "@/lib/session";
 import { addressInputSchema, predictionInputSchema, toPredictedBirthAt } from "@/lib/validation";
 
 export async function submitPredictionAction(formData: FormData) {
   const session = await readGuestSession();
   if (!session) {
     redirect("/?auth=1");
+  }
+  if (!(await validateCsrfToken(csrfTokenFromForm(formData)))) {
+    redirect("/deelnemen/voorspelling/formulier?error=ongeldig");
   }
 
   const parsed = predictionInputSchema.safeParse({
@@ -78,6 +82,8 @@ export async function submitPredictionAction(formData: FormData) {
     redirect("/deelnemen/voorspelling/formulier?error=definitief");
   }
 
+  await markCrossPromptSeen("predictionToAddress");
+
   if (result === "updated") {
     redirect("/deelnemen/voorspelling/bedankt");
   }
@@ -89,6 +95,9 @@ export async function submitAddressAction(formData: FormData) {
   const session = await readGuestSession();
   if (!session) {
     redirect("/?auth=1");
+  }
+  if (!(await validateCsrfToken(csrfTokenFromForm(formData)))) {
+    redirect("/deelnemen/adres/formulier?error=ongeldig");
   }
 
   const parsed = addressInputSchema.safeParse({
@@ -125,5 +134,6 @@ export async function submitAddressAction(formData: FormData) {
     },
   });
 
-  redirect("/deelnemen/adres/formulier?saved=1&cross=voorspelling");
+  await markCrossPromptSeen("addressToPrediction");
+  redirect("/deelnemen/adres/bedankt");
 }
