@@ -60,6 +60,9 @@ jobs:
       - name: Prepare isolated database
         run: npx prisma db push --accept-data-loss
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
