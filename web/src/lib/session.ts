@@ -8,6 +8,10 @@ type SessionPayload = {
   sub: string;
   scope: SessionScope;
   exp: number;
+  crossPromptSeen?: {
+    predictionToAddress?: boolean;
+    addressToPrediction?: boolean;
+  };
 };
 
 const SESSION_COOKIE = "baby_session";
@@ -41,11 +45,13 @@ export function createSessionValue(
   sub: string,
   scope: SessionScope,
   ttlSeconds: number,
+  crossPromptSeen?: SessionPayload["crossPromptSeen"],
 ): string {
   const payload: SessionPayload = {
     sub,
     scope,
     exp: Math.floor(Date.now() / 1000) + ttlSeconds,
+    crossPromptSeen,
   };
   const encoded = encodePayload(payload);
   const signature = sign(encoded);
@@ -108,6 +114,33 @@ export async function persistGuestSession(sub: string) {
     path: "/",
     maxAge: 60 * 60 * 8,
   });
+}
+
+export async function markCrossPromptSeen(
+  direction: "predictionToAddress" | "addressToPrediction",
+) {
+  const session = await readGuestSession();
+  if (!session) {
+    return;
+  }
+
+  const remainingSeconds = Math.max(1, session.exp - Math.floor(Date.now() / 1000));
+  const crossPromptSeen = {
+    ...session.crossPromptSeen,
+    [direction]: true,
+  };
+  const cookieStore = await cookies();
+  cookieStore.set(
+    SESSION_COOKIE,
+    createSessionValue(session.sub, "guest", remainingSeconds, crossPromptSeen),
+    {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: remainingSeconds,
+    },
+  );
 }
 
 export async function clearSession() {

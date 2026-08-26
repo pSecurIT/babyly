@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readGuestSession } from "@/lib/session";
 import { submitPredictionAction } from "@/app/deelnemen/actions";
+import { getCsrfToken } from "@/lib/csrf";
 
 export default async function PredictionFormPage() {
   const session = await readGuestSession();
@@ -14,6 +15,7 @@ export default async function PredictionFormPage() {
     select: { name: true },
   });
   const defaultName = participant?.name?.trim() || "";
+  const csrfToken = await getCsrfToken();
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-16">
@@ -29,6 +31,7 @@ export default async function PredictionFormPage() {
         <p className="mt-3 text-[#3c594b]">Je kunt je voorspelling eenmalig aanpassen.</p>
 
         <form action={submitPredictionAction} className="mt-8 space-y-4">
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Gegokte naam</span>
             <input required name="name" defaultValue={defaultName} className="baby-input" />

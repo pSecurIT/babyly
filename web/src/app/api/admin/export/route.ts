@@ -3,6 +3,10 @@ import { prisma } from "@/lib/db";
 import { readAdminSession } from "@/lib/session";
 
 function csvEscape(value: string): string {
+  if (/^\s*[=+\-@]/.test(value)) {
+    value = `'${value}`;
+  }
+
   if (/[",\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
   }
@@ -20,15 +24,36 @@ export async function GET() {
   }
 
   const participants = await prisma.participant.findMany({
-    include: { prediction: true, addressCard: true },
+    select: {
+      name: true,
+      email: true,
+      prediction: {
+        select: {
+          gender: true,
+          weightGrams: true,
+          heightCm: true,
+          predictedBirthAt: true,
+          editCount: true,
+          lockedAt: true,
+        },
+      },
+      addressCard: {
+        select: {
+          recipientName: true,
+          street: true,
+          houseNumber: true,
+          postalCode: true,
+          city: true,
+          country: true,
+        },
+      },
+    },
     orderBy: { createdAt: "asc" },
   });
 
   const header = toRow([
-    "participant_id",
     "name",
     "email",
-    "email_verified_at",
     "prediction_gender",
     "prediction_weight_grams",
     "prediction_height_cm",
@@ -48,10 +73,8 @@ export async function GET() {
     const addressCard = participant.addressCard;
 
     return toRow([
-      participant.id,
       participant.name ?? "",
       participant.email,
-      participant.emailVerifiedAt?.toISOString() ?? "",
       prediction?.gender ?? "",
       prediction?.weightGrams ?? "",
       prediction?.heightCm ?? "",
@@ -68,13 +91,17 @@ export async function GET() {
   });
 
   const csv = [header, ...rows].join("\n");
-  console.info(`[admin-audit] ${session.sub} exported CSV (${participants.length} participants)`);
+  console.info("[admin-audit] csv_exported");
 
   return new NextResponse(csv, {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="deelnemers-export.csv"`,
+      "Cache-Control": "no-store, max-age=0",
+      "Pragma": "no-cache",
+      "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

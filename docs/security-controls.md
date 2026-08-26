@@ -24,10 +24,27 @@
 3. Lengte- en rangechecks.
 
 ## Web Security
-1. CSRF-bescherming voor muterende requests.
-2. Secure cookies: HttpOnly, Secure, SameSite.
-3. Security headers instellen.
-4. Geen gevoelige data in URL parameters.
+1. CSRF-bescherming voor muterende requests via een server-generated,
+   HttpOnly double-submit cookie en een verborgen formulierveld.
+2. Middleware maakt de CSRF-cookie aan vóór Server Components formulieren
+    renderen; Server Components wijzigen zelf geen cookies.
+3. De server vergelijkt beide waarden constant-time en weigert ontbrekende,
+   ongeldige of gemanipuleerde tokens vóór database- of e-mailmutaties.
+4. Secure cookies: HttpOnly, Secure, SameSite.
+5. Security headers instellen.
+6. Geen gevoelige data in URL parameters.
+
+### Geïmplementeerde details
+
+- Middleware maakt vóór rendering een CSRF-cookie aan met 32 cryptografisch
+    willekeurige bytes. Server Components schrijven zelf geen cookies.
+- Alle muterende formulieren bevatten een verborgen CSRF-token. Auth-POST's,
+    deelnemer-server actions en admin-server actions vergelijken dit token
+    server-side met de cookie.
+- De centrale Next.js-configuratie zet CSP, HSTS in productie, referrer policy,
+    permissions policy, `nosniff` en framingbescherming op alle routes.
+- De admin-export gebruikt `no-store`, `no-referrer` en `nosniff`, selecteert
+    alleen noodzakelijke velden en neutraliseert spreadsheetformules.
 
 ## Anti-enumeratie
 1. Generieke responses bij magic-link aanvraag.
@@ -38,6 +55,9 @@
 1. Geen PII in standaard logs.
 2. Geen tokens of toegangscodes loggen.
 3. Alleen minimale audit-events voor adminacties.
+
+De huidige admin- en rate-limitlogs gebruiken generieke eventnamen en bevatten
+geen IP-adressen, e-mailadressen, tokens, toegangscodes of participant-ID's.
 
 ## Misbruikpreventie
 1. Honeypot veld in formulieren.

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { readGuestSession } from "@/lib/session";
+import { getCsrfToken } from "@/lib/csrf";
 
 type HomeProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -62,6 +63,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const showMailSent = params.mail === "1";
   const showAuthRequired = params.auth === "1";
   const showAuthFailed = params.auth === "failed";
+  const csrfToken = await getCsrfToken();
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-16 sm:py-24">
@@ -101,6 +103,7 @@ export default async function Home({ searchParams }: HomeProps) {
         )}
 
         <form action="/api/auth/request-link" method="post" className="mt-8 space-y-4">
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Je naam</span>
             <input

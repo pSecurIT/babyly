@@ -23,3 +23,11 @@ Gebruiker vult veilige babyvoorspelling in en mag maximaal eenmaal wijzigen.
 1. Ongeldige toegangscode: generieke fout.
 2. Verlopen of gebruikte magic link: afwijzen, optie nieuwe link.
 3. Tweede editpoging: blokkeren met duidelijke melding.
+
+## Implementatiedetails
+
+1. Voorspelformulieren bevatten een servergegenereerd CSRF-token.
+2. De server koppelt de prediction uitsluitend aan de geverifieerde
+	participant-sessie en valideert alle velden opnieuw.
+3. Na opslag toont de bedankpagina de optionele adres-cross-prompt; de
+	ondertekende sessie voorkomt herhaling binnen dezelfde sessie.

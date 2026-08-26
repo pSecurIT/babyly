@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { adminEmailSet, getEnv } from "@/lib/env";
+import { isValidCsrfToken } from "@/lib/csrf";
 import { rateLimit } from "@/lib/rate-limit";
 import { safeEqualHex, sha256Hex } from "@/lib/security";
 import { createSessionValue, parseSessionValue } from "@/lib/session";
@@ -14,6 +15,7 @@ describe("security en sessies", () => {
     process.env.MAGIC_LINK_TTL_MINUTES = "15";
     process.env.EMAIL_DELIVERY_MODE = "console";
     process.env.ADMIN_EMAILS = "parent@example.com, helper@example.com";
+    process.env.PRIVACY_CONTACT_EMAIL = "privacy@example.com";
     getEnv();
   });
 
@@ -52,7 +54,7 @@ describe("security en sessies", () => {
 
   it("verwerpt gewijzigde of verlopen sessies", () => {
     const valid = createSessionValue("participant-123", "guest", 60 * 60);
-    const tampered = `${valid.slice(0, -1)}0`;
+    const tampered = `${valid.slice(0, -1)}${valid.endsWith("0") ? "1" : "0"}`;
 
     expect(parseSessionValue(tampered)).toBeNull();
 
@@ -66,5 +68,13 @@ describe("security en sessies", () => {
     expect(allows.has("parent@example.com")).toBe(true);
     expect(allows.has("helper@example.com")).toBe(true);
     expect(allows.has("stranger@example.com")).toBe(false);
+  });
+
+  it("accepteert alleen een CSRF-token dat gelijk is aan de cookie", () => {
+    const token = "a".repeat(64);
+
+    expect(isValidCsrfToken(token, token)).toBe(true);
+    expect(isValidCsrfToken(null, token)).toBe(false);
+    expect(isValidCsrfToken(token, "b".repeat(64))).toBe(false);
   });
 });

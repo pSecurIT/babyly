@@ -5,7 +5,7 @@ const { mockReadGuestSession, mockPrisma } = vi.hoisted(() => {
   const mockReadGuestSession = vi.fn();
   const mockPrisma = {
     $transaction: vi.fn(),
-    participant: { update: vi.fn() },
+    participant: { findUnique: vi.fn(), update: vi.fn() },
     prediction: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
     addressCard: { findUnique: vi.fn(), create: vi.fn() },
   };
@@ -22,6 +22,10 @@ vi.mock("@/lib/session", () => ({
   readGuestSession: mockReadGuestSession,
 }));
 
+vi.mock("@/lib/csrf", () => ({
+  getCsrfToken: vi.fn().mockResolvedValue("valid-csrf-token"),
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: mockPrisma,
 }));
@@ -36,13 +40,17 @@ describe("hergebruik van een bestaande sessie tussen beide flows", () => {
   beforeEach(() => {
     mockReadGuestSession.mockReset();
     mockReadGuestSession.mockResolvedValue(activeSession);
+    mockPrisma.participant.findUnique.mockReset();
+    mockPrisma.participant.findUnique.mockResolvedValue(null);
   });
 
   it("laat een geverifieerde gebruiker de voorspelflow openen zonder nieuwe magic link", async () => {
+    mockPrisma.participant.findUnique.mockResolvedValue({ name: "Emma" });
+
     const element = await PredictionFormPage();
     const html = renderToStaticMarkup(element);
 
-    expect(html).toContain("Wat denk jij?");
+    expect(html).toContain("Wat denk jij, Emma?");
     expect(html).not.toContain("accessCode");
   });
 

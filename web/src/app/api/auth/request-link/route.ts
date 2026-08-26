@@ -6,6 +6,7 @@ import { sendMagicLink } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateRandomToken, sha256Hex } from "@/lib/security";
 import { accessRequestSchema } from "@/lib/validation";
+import { isValidCsrfToken } from "@/lib/csrf";
 
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -23,6 +24,13 @@ function genericRedirect(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const env = getEnv();
   const formData = await request.formData();
+  const csrfToken = formData.get("csrfToken");
+  if (!isValidCsrfToken(
+    typeof csrfToken === "string" ? csrfToken : null,
+    request.cookies.get("baby_csrf")?.value,
+  )) {
+    return genericRedirect(request);
+  }
   const input = accessRequestSchema.safeParse({
     accessCode: formData.get("accessCode"),
     name: formData.get("name"),
@@ -39,8 +47,7 @@ export async function POST(request: NextRequest) {
   const codeLimit = rateLimit(`code:${ip}`, 15, 10 * 60 * 1000);
   const emailLimit = rateLimit(`mail:${ip}`, 10, 10 * 60 * 1000);
   if (!codeLimit.allowed || !emailLimit.allowed) {
-    // Client response stays generic on purpose; log server-side only so rate limiting is visible during local debugging.
-    console.warn(`[request-link] rate limited ip=${ip} code=${codeLimit.allowed} mail=${emailLimit.allowed}`);
+    console.warn("[request-link] rate_limited");
     return genericRedirect(request);
   }
 

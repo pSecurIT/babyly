@@ -2,10 +2,13 @@ type AdminLoginProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
+import { getCsrfToken } from "@/lib/csrf";
+
 export default async function AdminLoginPage({ searchParams }: AdminLoginProps) {
   const params = await searchParams;
   const showMailSent = params.mail === "1";
   const showAuthFailed = params.auth === "failed";
+  const csrfToken = await getCsrfToken();
 
   return (
     <main className="mx-auto w-full max-w-md px-6 py-16 sm:py-24">
@@ -33,6 +36,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginProps) 
         )}
 
         <form action="/api/auth/admin-request-link" method="post" className="mt-8 space-y-4">
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">E-mailadres</span>
             <input required type="email" name="email" className="baby-input" />

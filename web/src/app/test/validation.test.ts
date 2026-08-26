@@ -87,6 +87,22 @@ describe("validatie van invoerdelen", () => {
     expect(parsed.email).toBe("user@example.com");
   });
 
+  it("verwijdert onbekende velden uit het gevalideerde formulierresultaat", () => {
+    const parsed = predictionInputSchema.parse({
+      name: "Emma",
+      gender: "girl",
+      weightKg: "3.5",
+      heightCm: "52",
+      birthDate: "2026-09-15",
+      birthTime: "21:10",
+      isAdmin: true,
+      participantId: "other-participant",
+    });
+
+    expect(parsed).not.toHaveProperty("isAdmin");
+    expect(parsed).not.toHaveProperty("participantId");
+  });
+
   it("bouwt een geldige datetime en weigert ongeldige combinaties", () => {
     const valid = toPredictedBirthAt("2026-09-15", "21:10");
     expect(valid).not.toBeNull();

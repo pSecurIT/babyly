@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockReadAdminSession, mockPrisma } = vi.hoisted(() => {
   const mockReadAdminSession = vi.fn();
@@ -18,6 +18,11 @@ const { mockReadAdminSession, mockPrisma } = vi.hoisted(() => {
 
   return { mockReadAdminSession, mockPrisma };
 });
+
+vi.mock("@/lib/csrf", () => ({
+  csrfTokenFromForm: vi.fn(() => "valid-csrf-token"),
+  validateCsrfToken: vi.fn().mockResolvedValue(true),
+}));
 
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => {
@@ -45,6 +50,10 @@ describe("admin acties", () => {
     mockPrisma.magicLinkToken.deleteMany.mockReset();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("weigert acties zonder adminsessie", async () => {
     mockReadAdminSession.mockResolvedValue(null);
 
@@ -58,12 +67,16 @@ describe("admin acties", () => {
   it("verwijdert een deelnemer inclusief gekoppelde data", async () => {
     mockReadAdminSession.mockResolvedValue({ sub: "admin@example.com", scope: "admin", exp: 9999999999 });
     mockPrisma.participant.delete.mockResolvedValue(undefined);
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
 
     const formData = new FormData();
     formData.set("participantId", "participant-1");
 
     await expect(deleteParticipantAction(formData)).rejects.toThrow("/admin?deleted=1");
     expect(mockPrisma.participant.delete).toHaveBeenCalledWith({ where: { id: "participant-1" } });
+    expect(infoSpy).toHaveBeenCalledWith("[admin-audit] participant_deleted");
+    expect(infoSpy.mock.calls.flat().join(" ")).not.toContain("admin@example.com");
+    expect(infoSpy.mock.calls.flat().join(" ")).not.toContain("participant-1");
   });
 
   it("reset een voorspelling zodat opnieuw indienen mogelijk is", async () => {
@@ -80,8 +93,9 @@ describe("admin acties", () => {
   it("purget alle deelnemergegevens in een transactie", async () => {
     mockReadAdminSession.mockResolvedValue({ sub: "admin@example.com", scope: "admin", exp: 9999999999 });
     mockPrisma.$transaction.mockResolvedValue(undefined);
+    const formData = new FormData();
 
-    await expect(purgeAllAction()).rejects.toThrow("/admin?purged=1");
+    await expect(purgeAllAction(formData)).rejects.toThrow("/admin?purged=1");
     expect(mockPrisma.$transaction).toHaveBeenCalled();
   });
 });

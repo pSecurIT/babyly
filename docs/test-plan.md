@@ -23,17 +23,68 @@ Security en privacy krijgen hoogste prioriteit.
 1. Publieke gebruiker kan geen andere data lezen.
 2. Ongeautoriseerde admin requests worden geweigerd.
 3. Alleen allowlisted admin e-mails krijgen adminsessie.
+4. Externe `next`-URL's worden na verificatie geweigerd.
+5. Verlopen, gebruikte en opnieuw aangeboden magic links worden geweigerd.
+6. Deelnemerleesroutes gebruiken uitsluitend de participant-ID uit de
+	geverifieerde sessie.
+7. Een gastsessie krijgt geen toegang tot admin-leespagina's.
+8. Admin-leespagina's lezen pas data na een geldige adminsessie.
 
 ## UX Gedragstests
 1. Feature A afrondbaar zonder Feature B.
 2. Feature B afrondbaar zonder Feature A.
 3. Cross-prompt verschijnt na afronding en blijft overslaanbaar.
 
+## Browser E2E-tests
+
+De Playwright-tests staan in `web/e2e/` en worden uitgevoerd met:
+
+```powershell
+cd E:\code\Baby\web
+npm run test:e2e
+```
+
+De standaardtests controleren de publieke authpagina, het CSRF-token in de
+browser en de bescherming van beide deelnemerflows. De volledige submission-
+en cross-prompttests vereisen een geïsoleerde testdatabase en worden opt-in
+gestart met `E2E_RUN_FULL=1`. De Playwright global setup maakt hiervoor een
+unieke testdeelnemer en tijdelijke sessie aan in `e2e/.auth/guest.json`, en
+ruimt beide na afloop op. Dit bestand is genegeerd door Git; gebruik nooit
+een productiecookie of productiedatabase.
+
+De GitHub Actions-workflow in `.github/workflows/ci.yml` start automatisch een
+ephemeral PostgreSQL-service, initialiseert het schema, installeert Chromium
+en voert unit-, security- en volledige E2E-tests uit met `E2E_RUN_FULL=1`.
+De CI-credentials zijn uitsluitend testwaarden en bevatten geen secrets.
+
+De actuele browserchecks zijn:
+
+- publieke authpagina met CSRF-token;
+- weigering van een CSRF-loze auth-request;
+- blokkade van beide deelnemerflows zonder sessie;
+- volledige prediction- en address-submission met cross-prompt in een
+	geïsoleerde database.
+
+De laatste twee tests worden alleen uitgevoerd met `E2E_RUN_FULL=1`.
+
+## Beveiligingsdekking
+
+De unit- en integrationtests dekken daarnaast tokenreplay, verlopen tokens,
+open redirects, XSS-outputescaping, mass assignment, session fixation, IDOR,
+admin-autorisatie, exportdataminimalisatie, logredactie en dynamische CSRF-
+dekking van alle formulierpagina's.
+
 ## Security Regression Checklist
-1. CSRF.
-2. IDOR.
-3. XSS.
-4. SQL injection via ORM/parameterized queries.
-5. Mass assignment.
-6. Session fixation.
-7. E-mail enumeratie.
+1. CSRF op gast- en admin-magic-linkformulieren.
+2. CSRF op deelnemer- en admin-server actions.
+3. Elke pagina met een muterend formulier wordt dynamisch gevonden en bevat
+	een server-tokenveld.
+4. IDOR.
+5. XSS.
+6. SQL injection via ORM/parameterized queries.
+7. Mass assignment.
+8. Session fixation.
+9. E-mail enumeratie.
+10. Open redirect via `next`-parameter.
+11. XSS via participant- en formulierinvoer.
+12. Mass assignment via onbekende formuliervelden.

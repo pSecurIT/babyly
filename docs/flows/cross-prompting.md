@@ -18,3 +18,11 @@ Gebruiker vriendelijk uitnodigen om ook de andere flow in te vullen, zonder verp
 ## Tracking Zonder Profiling
 1. Alleen functionele status opslaan: flow_a_completed, flow_b_completed, prompt_a_to_b_shown, prompt_b_to_a_shown.
 2. Geen trackingcookies of marketingprofielen.
+
+## Implementatiestatus
+
+Na succesvolle afronding van beide flows toont de bijbehorende bedankpagina
+een optionele link naar de andere flow. De richting wordt in de ondertekende
+gast-sessie gemarkeerd, waardoor dezelfde prompt maximaal eenmaal per richting
+per sessie verschijnt. Er worden geen marketing- of trackinggegevens voor
+deze status opgeslagen.

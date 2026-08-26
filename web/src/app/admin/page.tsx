@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readAdminSession } from "@/lib/session";
 import { deleteParticipantAction, purgeAllAction, resetPredictionAction } from "@/app/admin/actions";
+import { getCsrfToken } from "@/lib/csrf";
 
 type AdminDashboardProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -14,6 +15,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
   }
 
   const params = await searchParams;
+  const csrfToken = await getCsrfToken();
 
   const [participantCount, predictions, boyCount, girlCount] = await Promise.all([
     prisma.participant.count(),
@@ -80,6 +82,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
             ⬇️ CSV-export
           </a>
           <form action={purgeAllAction}>
+            <input type="hidden" name="csrfToken" value={csrfToken} />
             <button
               type="submit"
               className="rounded-full border border-[#e2a4a4] bg-[#fdeeee] px-4 py-2 text-sm font-bold text-[#7a2b2b]"
@@ -116,12 +119,14 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
                   <td className="py-2 pr-4">
                     <div className="flex gap-2">
                       <form action={resetPredictionAction}>
+                        <input type="hidden" name="csrfToken" value={csrfToken} />
                         <input type="hidden" name="participantId" value={prediction.participantId} />
                         <button type="submit" className="text-xs font-bold text-[#4a9d61] underline">
                           Reset
                         </button>
                       </form>
                       <form action={deleteParticipantAction}>
+                        <input type="hidden" name="csrfToken" value={csrfToken} />
                         <input type="hidden" name="participantId" value={prediction.participantId} />
                         <button type="submit" className="text-xs font-bold text-[#a03d3d] underline">
                           Verwijder
