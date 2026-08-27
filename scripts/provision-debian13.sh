@@ -5,6 +5,7 @@ APP_NAME="babyly"
 APP_USER="babyly"
 SSH_USER="deploy"
 APP_DIR="/opt/${APP_NAME}"
+APP_WORKDIR="${APP_DIR}/web"
 REPO_URL="git@github.com:pSecurIT/babyly.git"
 BRANCH="main"
 CONFIGURE_SSH="0"
@@ -113,7 +114,7 @@ else
   echo "Warning: /root/.ssh/authorized_keys is missing; SSH login for $SSH_USER is not ready." >&2
 fi
 
-install -d -o "$APP_USER" -g "$APP_USER" -m 0750 "$APP_DIR"
+install -d -o "$APP_USER" -g docker -m 0750 "$APP_DIR"
 if [[ -d "$APP_DIR/.git" ]]; then
   git -c "safe.directory=$APP_DIR" -C "$APP_DIR" fetch --prune origin
   git -c "safe.directory=$APP_DIR" -C "$APP_DIR" checkout "$BRANCH"
@@ -122,13 +123,18 @@ else
   rm -rf "$APP_DIR"
   git clone --branch "$BRANCH" --single-branch "$REPO_URL" "$APP_DIR"
 fi
-chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+chown -R "$APP_USER:docker" "$APP_DIR"
 chmod 0750 "$APP_DIR"
 
-if [[ ! -f "$APP_DIR/.env.production" && -f "$APP_DIR/.env.production.example" ]]; then
+if [[ ! -f "$APP_WORKDIR/.env.production" && -f "$APP_WORKDIR/.env.production.example" ]]; then
   install -o "$APP_USER" -g "$APP_USER" -m 0600 \
-    "$APP_DIR/.env.production.example" "$APP_DIR/.env.production"
-  echo "Created $APP_DIR/.env.production from the example; replace every CHANGE_THIS value before starting." >&2
+    "$APP_WORKDIR/.env.production.example" "$APP_WORKDIR/.env.production"
+  echo "Created $APP_WORKDIR/.env.production from the example; replace every CHANGE_THIS value before starting." >&2
+fi
+
+if [[ -f "$APP_WORKDIR/.env.production" ]]; then
+  chown root:docker "$APP_WORKDIR/.env.production"
+  chmod 0640 "$APP_WORKDIR/.env.production"
 fi
 
 cat > "/etc/systemd/system/${APP_NAME}.service" <<EOF
@@ -142,7 +148,7 @@ Wants=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 User=$APP_USER
-WorkingDirectory=$APP_DIR
+WorkingDirectory=$APP_WORKDIR
 ExecStart=/usr/bin/docker compose up -d --build
 ExecStop=/usr/bin/docker compose down
 TimeoutStartSec=0
@@ -183,14 +189,15 @@ cat <<EOF
 Server preparation complete.
 
 Application directory: $APP_DIR
+Compose directory:     $APP_WORKDIR
 Service:              $APP_NAME.service
 
 Before starting the service:
-1. Review and edit $APP_DIR/.env.production.
+1. Review and edit $APP_WORKDIR/.env.production.
 2. Configure Cloudflare DNS for baby.example.invalid.
 3. Configure Resend and SPF/DKIM/DMARC.
 4. Create /etc/babyly/backup-encryption-password with mode 600.
-5. Configure backup variables in .env.production.
+5. Configure backup variables in $APP_WORKDIR/.env.production.
 6. Start with: systemctl start $APP_NAME.service
 7. Check with: docker compose ps && docker compose logs --tail=100 caddy
 EOF

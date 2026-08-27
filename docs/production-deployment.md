@@ -193,8 +193,9 @@ pas wanneer `ssh deploy@<linode-ip>` opnieuw werkt.
 Na de provisioning:
 
 1. De firewall staat alleen SSH, HTTP en HTTPS toe.
-2. De repository staat op `/opt/babyly`.
-3. Kopieer `.env.production.example` naar `.env.production` en vul alle
+2. De repository staat op `/opt/babyly` en de Composefile in `/opt/babyly/web`.
+3. Kopieer in `/opt/babyly/web` `.env.production.example` naar
+   `.env.production` en vul alle
    `CHANGE_THIS`-waarden in. Dit bestand mag nooit worden gecommit.
 4. Maak `/etc/babyly/backup-encryption-password` aan met strikte
    rechten (`chmod 600`). Zet het wachtwoord niet in de repository.
@@ -215,6 +216,31 @@ Start daarna vanuit `web/`:
 ```bash
 docker compose up -d --build
 ```
+
+De Composefile staat in `/opt/babyly/web`. De systemd-service start de stack
+als serviceuser `babyly`; voor handmatig beheer kan `deploy` in die directory
+`docker compose up -d --build` uitvoeren nadat de Docker-groep actief is.
+Gebruik bij voorkeur `sudo systemctl start babyly.service` voor de beheerde
+productiestart.
+
+Als Compose meldt dat `/opt/babyly/web/.env` geen toegang heeft, bestaat daar
+waarschijnlijk een oud, root-only `.env`-bestand. De productieconfiguratie
+gebruikt `.env.production`; `.env` is daarom niet nodig. Controleer eerst:
+
+```bash
+ls -la /opt/babyly/web/.env*
+```
+
+Verplaats een overbodig oud bestand veilig uit de Compose-directory:
+
+```bash
+sudo mv /opt/babyly/web/.env /opt/babyly/web/.env.unused
+sudo chmod 600 /opt/babyly/web/.env.unused
+```
+
+Gebruik daarna in `/opt/babyly/web` opnieuw `docker compose up -d --build`.
+De `deploy`-user moet na het toevoegen aan de Docker-groep opnieuw inloggen
+of een nieuwe login-shell openen voordat de groepsrechten actief zijn.
 
 De standaardfile `docker-compose.yml` gebruikt `.env.production` voor de
 applicatie en database. Er is bewust maar één Composefile voor productie, zodat
