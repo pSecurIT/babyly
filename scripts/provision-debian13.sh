@@ -105,6 +105,7 @@ if ! id "$SSH_USER" >/dev/null 2>&1; then
   useradd --create-home --shell /bin/bash "$SSH_USER"
 fi
 usermod -aG sudo "$SSH_USER"
+usermod -aG docker "$SSH_USER"
 
 if [[ -r /root/.ssh/authorized_keys ]]; then
   install -d -o "$SSH_USER" -g "$SSH_USER" -m 0700 "/home/$SSH_USER/.ssh"

@@ -163,7 +163,8 @@ niet voor dagelijks interactief beheer.
 
 Het provisioning-script maakt automatisch een aparte SSH-beheeruser `deploy`
 aan. Deze user krijgt een normale shell, wordt lid van `sudo` en krijgt een
-kopie van `/root/.ssh/authorized_keys`. De `babyly`-serviceuser blijft daarvan
+lid van `docker` voor handmatig Compose-beheer en krijgt een kopie van
+`/root/.ssh/authorized_keys`. De `babyly`-serviceuser blijft daarvan
 gescheiden en heeft geen interactieve shell.
 
 Na het uitvoeren van het provisioning-script test je vanuit een tweede
