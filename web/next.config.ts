@@ -30,6 +30,7 @@ function getSecurityHeaders() {
 }
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   async headers() {
     const headers = getSecurityHeaders();
 

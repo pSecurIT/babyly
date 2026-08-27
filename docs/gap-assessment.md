@@ -9,14 +9,22 @@ documenten. Dit bestand bevat alleen nog openstaande gaps.
 
 ### P0: vóór publiek livegaan
 
-- **Productieconfiguratie:** hosting- en deploymentmodel, databaseprovider en
-  transactionele e-mailprovider zijn nog niet gekozen. SPF, DKIM en DMARC
-  moeten nog worden geconfigureerd.
-- **Secrets en beheer:** de twee echte admin-e-mailadressen,
-  productiecredentials en het privacycontactadres moeten in de production
-  secret store worden ingesteld en gecontroleerd.
-- **Backups en herstel:** backups, encryptie, toegangsbeheer, restoreprocedure
-  en minimaal één succesvolle restore-test moeten nog worden ingericht.
+- **Productieconfiguratie:** de basiskeuzes zijn vastgelegd in
+  [production-deployment.md](production-deployment.md): Linode Shared CPU
+  2 GB in Amsterdam, Debian 13, Docker Compose + Caddy, PostgreSQL op de VPS,
+  Cloudflare DNS-only en `baby.example.invalid`. Het Debian-provisioning-
+  script is toegevoegd; de server moet nog worden aangemaakt en gehard volgens
+  die procedure.
+- **E-mailproductie:** Resend en `baby@example.invalid` zijn gekozen, maar de
+  echte Resend-providerintegratie moet nog worden geïmplementeerd en getest.
+  SPF, DKIM en DMARC moeten daarna worden geconfigureerd.
+- **Secrets en beheer:** de twee admin-e-mailadressen en het privacycontact
+  zijn bepaald, maar productiecredentials en API-keys moeten nog in de server
+  secret/configuration store worden ingesteld en gecontroleerd.
+- **Backups en herstel:** het versleutelde backupscript en de Object Storage-
+  bestemming zijn voorbereid in [production-deployment.md](production-deployment.md),
+  maar cron, toegangsbeheer en minimaal één succesvolle restore-test moeten
+  nog op de Linode worden ingericht.
 - **Bewaarbeleid:** leg de startdatum van de bewaartermijn van één jaar vast
   en documenteer hoe verwijdering en purge met backups omgaan.
 - **Juridische privacyreview:** laat de publieke privacytekst controleren vóór
@@ -48,6 +56,6 @@ documenten. Dit bestand bevat alleen nog openstaande gaps.
 
 1. Laat de CI-workflow de volledige database-backed E2E-suite uitvoeren en
    bevestig dat cleanup van de testdeelnemer werkt.
-2. Kies productieproviders en leg secrets, e-mailauthenticatie, backups,
-   restore en retentie vast.
+2. Maak de Linode aan, configureer DNS/HTTPS en leg secrets,
+  e-mailauthenticatie, backups, restore en retentie vast.
 3. Voer de formele threat review en juridische privacyreview uit.

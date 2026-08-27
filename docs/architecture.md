@@ -51,3 +51,5 @@ Eenvoudige, veilige Nederlandstalige website met twee losse gebruikersflows:
 3. Logging zonder PII en zonder tokens.
 4. GitHub Actions gebruikt een ephemeral PostgreSQL-service voor volledige
 	database-backed E2E-tests; productiecredentials worden daar niet gebruikt.
+5. Productie draait als Docker Compose-stack op een Debian 13 Linode met
+	Caddy als reverse proxy en PostgreSQL op het interne netwerk.
