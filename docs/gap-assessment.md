@@ -15,9 +15,10 @@ documenten. Dit bestand bevat alleen nog openstaande gaps.
   Cloudflare DNS-only en `baby.example.invalid`. Het Debian-provisioning-
   script is toegevoegd; de server moet nog worden aangemaakt en gehard volgens
   die procedure.
-- **E-mailproductie:** Resend en `baby@example.invalid` zijn gekozen, maar de
-  echte Resend-providerintegratie moet nog worden geïmplementeerd en getest.
-  SPF, DKIM en DMARC moeten daarna worden geconfigureerd.
+- **E-mailproductie:** Resend en `baby@example.invalid` zijn gekozen en de
+  providerintegratie is geïmplementeerd en getest. Op de server moeten de API-
+  key, domeinverificatie en een echte aflevertest nog worden gecontroleerd;
+  SPF, DKIM en DMARC moeten actief blijven.
 - **Secrets en beheer:** de twee admin-e-mailadressen en het privacycontact
   zijn bepaald, maar productiecredentials en API-keys moeten nog in de server
   secret/configuration store worden ingesteld en gecontroleerd.

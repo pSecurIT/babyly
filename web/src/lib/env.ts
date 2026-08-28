@@ -10,7 +10,25 @@ const envSchema = z.object({
   EMAIL_DELIVERY_MODE: z.enum(["console", "provider"]).default("console"),
   ADMIN_EMAILS: z.string().default(""),
   PRIVACY_CONTACT_EMAIL: z.string().email(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(1).optional(),
 }).superRefine((values, ctx) => {
+  if (values.EMAIL_DELIVERY_MODE === "provider") {
+    if (!values.RESEND_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "RESEND_API_KEY is verplicht wanneer provider-mail actief is.",
+        path: ["RESEND_API_KEY"],
+      });
+    }
+    if (!values.EMAIL_FROM) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "EMAIL_FROM is verplicht wanneer provider-mail actief is.",
+        path: ["EMAIL_FROM"],
+      });
+    }
+  }
   if (
     process.env.NODE_ENV === "production" &&
     values.ENVIRONMENT_NAME.toLowerCase() === "default"

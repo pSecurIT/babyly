@@ -283,5 +283,6 @@ Resend vereist domeinverificatie en SPF, DKIM en DMARC voor
 `example.invalid`. Gebruik de API-key alleen op de server. De twee admin-
 e-mails en het privacycontactadres worden uitsluitend server-side ingesteld.
 
-De huidige applicatie moet vóór productie nog een echte Resend-provider-
-implementatie hebben; de console-mailmodus is alleen voor lokale ontwikkeling.
+De applicatie gebruikt in provider-modus de Resend API. De console-mailmodus
+blijft alleen bedoeld voor lokale ontwikkeling. Controleer na deployment met
+een echte testaanvraag dat de magic link aankomt en éénmalig werkt.
