@@ -168,8 +168,9 @@ if [[ -f "$APP_WORKDIR/.env.production" ]]; then
   done
   
   # Run migrations as root in the app container
-  # Combine npm install and migration in a single container to preserve dependencies
-  /usr/bin/docker compose run --rm --user root app sh -c 'npm install && node_modules/.bin/prisma migrate deploy --schema=/app/prisma/schema.prisma'
+  # Rebuild so the image includes the checked-out Prisma schema and dependencies.
+  /usr/bin/docker compose run --build --rm --user root app \
+    node_modules/.bin/prisma migrate deploy --schema=/app/prisma/schema.prisma
   
   # Stop the database for now (it will be started by the service)
   /usr/bin/docker compose down
