@@ -20,7 +20,18 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
   const [participantCount, predictions, boyCount, girlCount] = await Promise.all([
     prisma.participant.count(),
     prisma.prediction.findMany({
-      include: { participant: { select: { name: true, email: true } } },
+      select: {
+        id: true,
+        participantId: true,
+        predictedName: true,
+        gender: true,
+        weightGrams: true,
+        heightCm: true,
+        predictedBirthAt: true,
+        createdAt: true,
+        updatedAt: true,
+        participant: { select: { name: true, email: true } },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.prediction.count({ where: { gender: "boy" } }),
@@ -103,7 +114,6 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
                 <th className="py-2 pr-4">Gewicht</th>
                 <th className="py-2 pr-4">Lengte</th>
                 <th className="py-2 pr-4">Geboortemoment</th>
-                <th className="py-2 pr-4">Wijzigingen</th>
                 <th className="py-2 pr-4">Acties</th>
               </tr>
             </thead>
@@ -117,7 +127,6 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
                   <td className="py-2 pr-4">{(prediction.weightGrams / 1000).toFixed(2)} kg</td>
                   <td className="py-2 pr-4">{prediction.heightCm} cm</td>
                   <td className="py-2 pr-4">{prediction.predictedBirthAt.toLocaleString("nl-NL")}</td>
-                  <td className="py-2 pr-4">{prediction.editCount}</td>
                   <td className="py-2 pr-4">
                     <div className="flex gap-2">
                       <form action={resetPredictionAction}>

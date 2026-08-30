@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readGuestSession } from "@/lib/session";
+import { getEnv } from "@/lib/env";
 
 export default async function PredictionThanksPage() {
   const session = await readGuestSession();
@@ -8,16 +9,17 @@ export default async function PredictionThanksPage() {
     redirect("/?auth=1");
   }
 
+  const env = getEnv();
+  const deadlineDate = new Date(env.PREDICTION_DEADLINE_DATE);
+  const isDeadlinePassed = new Date() > deadlineDate;
+
   const prediction = await prisma.prediction.findUnique({
     where: { participantId: session.sub },
-    select: { editCount: true, lockedAt: true },
   });
 
   if (!prediction) {
     redirect("/deelnemen/voorspelling/formulier");
   }
-
-  const canStillEdit = prediction.editCount < 1 && !prediction.lockedAt;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-16">
@@ -31,13 +33,11 @@ export default async function PredictionThanksPage() {
 
         <h1 className="text-3xl font-extrabold text-[#234a37]">Bedankt voor je voorspelling!</h1>
         <p className="mt-3 text-[#3c594b]">
-          {canStillEdit
-            ? "We hebben je voorspelling opgeslagen. Je kunt hem nog eenmaal aanpassen."
-            : "We hebben je voorspelling opgeslagen. Deze staat nu definitief vast."}
+          We hebben je voorspelling opgeslagen. {!isDeadlinePassed && `Je kunt hem nog aanpassen tot ${deadlineDate.toLocaleDateString("nl-NL")}.`}
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {canStillEdit && (
+          {!isDeadlinePassed && (
             <a href="/deelnemen/voorspelling/formulier" className="baby-button-secondary px-6 py-5 text-lg">
               ✏️ Voorspelling wijzigen
             </a>

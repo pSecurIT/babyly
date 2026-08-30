@@ -44,8 +44,6 @@ describe("admin CSV-export", () => {
           weightGrams: 3500,
           heightCm: 52,
           predictedBirthAt: new Date("2026-09-15T21:10:00Z"),
-          editCount: 0,
-          lockedAt: null,
         },
         addressCard: null,
         createdAt: new Date("2026-08-26T12:00:00Z"),

@@ -5,6 +5,7 @@ import { csrfTokenFromForm, validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/db";
 import { markCrossPromptSeen, readGuestSession } from "@/lib/session";
 import { addressInputSchema, predictionInputSchema, toPredictedBirthAt } from "@/lib/validation";
+import { getEnv } from "@/lib/env";
 
 export async function submitPredictionAction(formData: FormData) {
   const session = await readGuestSession();
@@ -33,6 +34,12 @@ export async function submitPredictionAction(formData: FormData) {
     redirect("/deelnemen/voorspelling/formulier?error=datumtijd");
   }
 
+  const env = getEnv();
+  const deadlineDate = new Date(env.PREDICTION_DEADLINE_DATE);
+  if (new Date() > deadlineDate) {
+    redirect("/deelnemen/voorspelling/formulier?error=verlopen");
+  }
+
   const weightGrams = Math.round(parsed.data.weightKg * 1000);
 
   const result = await prisma.$transaction(async (tx) => {
@@ -49,14 +56,9 @@ export async function submitPredictionAction(formData: FormData) {
           weightGrams,
           heightCm: parsed.data.heightCm,
           predictedBirthAt,
-          editCount: 0,
         },
       });
       return "created" as const;
-    }
-
-    if (existing.editCount >= 1 || existing.lockedAt) {
-      return "locked" as const;
     }
 
     await tx.prediction.update({
@@ -67,24 +69,13 @@ export async function submitPredictionAction(formData: FormData) {
         weightGrams,
         heightCm: parsed.data.heightCm,
         predictedBirthAt,
-        editCount: { increment: 1 },
-        lockedAt: new Date(),
       },
     });
 
     return "updated" as const;
   });
 
-  if (result === "locked") {
-    redirect("/deelnemen/voorspelling/formulier?error=definitief");
-  }
-
   await markCrossPromptSeen("predictionToAddress");
-
-  if (result === "updated") {
-    redirect("/deelnemen/voorspelling/bedankt");
-  }
-
   redirect("/deelnemen/voorspelling/bedankt");
 }
 

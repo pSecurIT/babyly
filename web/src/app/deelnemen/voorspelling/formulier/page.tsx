@@ -3,12 +3,22 @@ import { prisma } from "@/lib/db";
 import { readGuestSession } from "@/lib/session";
 import { submitPredictionAction } from "@/app/deelnemen/actions";
 import { getCsrfToken } from "@/lib/csrf";
+import { getEnv } from "@/lib/env";
 
-export default async function PredictionFormPage() {
+export default async function PredictionFormPage(props: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const searchParams = await props.searchParams;
+  const error = searchParams.error as string | undefined;
+
   const session = await readGuestSession();
   if (!session) {
     redirect("/?auth=1");
   }
+
+  const env = getEnv();
+  const deadlineDate = new Date(env.PREDICTION_DEADLINE_DATE);
+  const isDeadlinePassed = new Date() > deadlineDate;
 
   const prediction = await prisma.prediction.findUnique({
     where: { participantId: session.sub },
@@ -28,9 +38,36 @@ export default async function PredictionFormPage() {
         </div>
 
         <h1 className="text-3xl font-extrabold text-[#234a37]">Wat denk jij?</h1>
-        <p className="mt-3 text-[#3c594b]">Je kunt je voorspelling eenmalig aanpassen.</p>
+        <p className="mt-3 text-[#3c594b]">Je kunt je voorspelling aanpassen tot {deadlineDate.toLocaleDateString("nl-NL")}.</p>
 
-        <form action={submitPredictionAction} className="mt-8 space-y-4">
+        {error === "ongeldig" && (
+          <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-800">
+            Er is een beveiligingsprobleem opgetreden. Probeer het opnieuw.
+          </div>
+        )}
+        {error === "validatie" && (
+          <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-800">
+            Controleer of alle velden juist zijn ingevuld.
+          </div>
+        )}
+        {error === "datumtijd" && (
+          <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-800">
+            De datum en tijd zijn ongeldig. Controleer alstublieft.
+          </div>
+        )}
+        {error === "verlopen" && (
+          <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-800">
+            Helaas is de deadline voor voorspellingen verstreken ({deadlineDate.toLocaleDateString("nl-NL")}).
+          </div>
+        )}
+
+        {isDeadlinePassed ? (
+          <div className="mt-8 rounded-lg bg-yellow-100 p-4 text-yellow-800">
+            <p className="font-bold">Voorspellingen zijn gesloten</p>
+            <p className="mt-1">De deadline voor voorspellingen is verstreken op {deadlineDate.toLocaleDateString("nl-NL")}.</p>
+          </div>
+        ) : (
+          <form action={submitPredictionAction} className="mt-8 space-y-4">
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Gegokte naam</span>
@@ -72,6 +109,7 @@ export default async function PredictionFormPage() {
             💚 Mijn voorspelling opslaan
           </button>
         </form>
+        )}
 
         <aside className="mt-8 rounded-2xl border border-[#f4d88b] bg-[#fff8df] p-4 text-[#5f4d1a]">
           Ook je adres achterlaten voor het geboortekaartje? Dat kan <a className="font-bold underline" href="/deelnemen/adres/formulier">hier</a>

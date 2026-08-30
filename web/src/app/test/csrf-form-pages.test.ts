@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 const { mockPrisma, mockReadAdminSession, mockReadGuestSession } = vi.hoisted(() => ({
   mockPrisma: {
     participant: { count: vi.fn(), findUnique: vi.fn() },
-    prediction: { count: vi.fn(), findMany: vi.fn() },
+    prediction: { count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
     addressCard: { findMany: vi.fn() },
   },
   mockReadAdminSession: vi.fn(),
@@ -76,7 +76,8 @@ async function renderPages() {
 
   mockReadGuestSession.mockResolvedValue(guestSession);
   mockPrisma.participant.findUnique.mockResolvedValue({ name: "Emma" });
-  const prediction = renderToStaticMarkup(await PredictionFormPage());
+  mockPrisma.prediction.findUnique.mockResolvedValue({ predictedName: "Emma" });
+  const prediction = renderToStaticMarkup(await PredictionFormPage({ searchParams: Promise.resolve({}) }));
   const address = renderToStaticMarkup(await AddressFormPage());
 
   mockReadAdminSession.mockResolvedValue(adminSession);
@@ -88,7 +89,6 @@ async function renderPages() {
     weightGrams: 3500,
     heightCm: 52,
     predictedBirthAt: new Date("2026-09-15T21:10:00Z"),
-    editCount: 0,
     participant: { name: "Emma", email: "emma@example.com" },
   }]);
   mockPrisma.prediction.count.mockResolvedValue(1);

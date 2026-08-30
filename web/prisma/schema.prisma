@@ -53,8 +53,6 @@ model Prediction {
   weightGrams      Int
   heightCm         Int
   predictedBirthAt DateTime
-  editCount        Int         @default(0)
-  lockedAt         DateTime?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 

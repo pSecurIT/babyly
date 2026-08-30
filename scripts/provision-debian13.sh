@@ -138,6 +138,42 @@ if [[ -f "$APP_WORKDIR/.env.production" ]]; then
   chmod 0640 "$APP_WORKDIR/.env.production"
 fi
 
+# Run database migrations before starting the service
+if [[ -f "$APP_WORKDIR/.env.production" ]]; then
+  echo "Starting database and running migrations..." >&2
+  cd "$APP_WORKDIR"
+  
+  # Start the database in the background
+  /usr/bin/docker compose up -d db
+  
+  # Wait for database to be ready using healthcheck
+  echo "Waiting for database to be ready..." >&2
+  max_attempts=30
+  attempt=0
+  while [ $attempt -lt $max_attempts ]; do
+    if /usr/bin/docker compose ps db 2>/dev/null | grep -q healthy; then
+      echo "Database is ready." >&2
+      break
+    fi
+    attempt=$((attempt + 1))
+    if [ $attempt -eq $max_attempts ]; then
+      echo "Database failed to become ready within 30 seconds." >&2
+      /usr/bin/docker compose logs db
+      exit 1
+    fi
+    sleep 1
+  done
+  
+  # Run migrations as root in the app container
+  /usr/bin/docker compose run --rm --user root app npx prisma migrate deploy
+  
+  # Stop the database for now (it will be started by the service)
+  /usr/bin/docker compose down
+  echo "Database migrations completed." >&2
+else
+  echo "Warning: $APP_WORKDIR/.env.production not found; database migrations skipped." >&2
+fi
+
 cat > "/etc/systemd/system/${APP_NAME}.service" <<EOF
 [Unit]
 Description=Babyly production Docker Compose stack

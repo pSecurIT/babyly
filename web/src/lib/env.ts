@@ -10,6 +10,7 @@ const envSchema = z.object({
   EMAIL_DELIVERY_MODE: z.enum(["console", "provider"]).default("console"),
   ADMIN_EMAILS: z.string().default(""),
   PRIVACY_CONTACT_EMAIL: z.string().email(),
+  PREDICTION_DEADLINE_DATE: z.string().datetime().default("2026-12-20T23:59:59Z"),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).optional(),
   EMAIL_TEST_RECIPIENT: z.string().email().optional(),

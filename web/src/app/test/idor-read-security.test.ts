@@ -46,8 +46,11 @@ describe("IDOR- en ongeautoriseerde leesbeveiliging", () => {
   it("queryt de voorspelling uitsluitend voor de participant uit de sessie", async () => {
     mockReadGuestSession.mockResolvedValue(guestSession);
     mockPrisma.prediction.findUnique.mockResolvedValue({
-      editCount: 1,
-      lockedAt: new Date("2026-08-26T12:00:00Z"),
+      predictedName: "Johan",
+      gender: "boy",
+      weightGrams: 3500,
+      heightCm: 50,
+      predictedBirthAt: new Date("2026-09-15T10:30:00Z"),
     });
 
     const html = renderToStaticMarkup(await PredictionThanksPage());
@@ -55,7 +58,6 @@ describe("IDOR- en ongeautoriseerde leesbeveiliging", () => {
     expect(html).toContain("Bedankt voor je voorspelling!");
     expect(mockPrisma.prediction.findUnique).toHaveBeenCalledWith({
       where: { participantId: "participant-own" },
-      select: { editCount: true, lockedAt: true },
     });
     expect(mockPrisma.prediction.findUnique).not.toHaveBeenCalledWith(
       expect.objectContaining({ where: { participantId: "participant-other" } }),

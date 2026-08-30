@@ -97,7 +97,7 @@ describe("business rules en flowafhandeling", () => {
     expect(tx.participant.update).not.toHaveBeenCalled();
   });
 
-  it("laat een eerste wijziging toe en blokkeert de tweede wijziging", async () => {
+  it("laat meerdere wijzigingen toe zolang de deadline niet is verstreken", async () => {
     mockReadGuestSession.mockResolvedValue({ sub: "participant-123", scope: "guest", exp: 9999999999 });
 
     const tx = {
@@ -105,7 +105,8 @@ describe("business rules en flowafhandeling", () => {
         update: vi.fn().mockResolvedValue(undefined),
       },
       prediction: {
-        findUnique: vi.fn().mockResolvedValue({ editCount: 0, lockedAt: null }),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue(undefined),
         update: vi.fn().mockResolvedValue(undefined),
       },
     };
@@ -119,17 +120,22 @@ describe("business rules en flowafhandeling", () => {
     formData.set("birthDate", "2026-09-16");
     formData.set("birthTime", "21:15");
 
+    // First submission - creates prediction
+    await expect(submitPredictionAction(formData)).rejects.toThrow(
+      "/deelnemen/voorspelling/bedankt",
+    );
+    expect(tx.prediction.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ predictedName: "Emma" }),
+    }));
+
+    // Second submission - updates existing prediction
+    tx.prediction.findUnique.mockResolvedValueOnce({ predictedName: "Emma" });
     await expect(submitPredictionAction(formData)).rejects.toThrow(
       "/deelnemen/voorspelling/bedankt",
     );
     expect(tx.prediction.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ predictedName: "Emma" }),
     }));
-
-    tx.prediction.findUnique.mockResolvedValueOnce({ editCount: 1, lockedAt: new Date() });
-    await expect(submitPredictionAction(formData)).rejects.toThrow(
-      "/deelnemen/voorspelling/formulier?error=definitief",
-    );
   });
 
   it("verhoogt de adresregel maximaal één adres per participant", async () => {

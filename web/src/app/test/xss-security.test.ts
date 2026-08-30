@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 const mockReadGuestSession = vi.hoisted(() => vi.fn());
-const mockParticipantFindUnique = vi.hoisted(() => vi.fn());
+const mockPredictionFindUnique = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/session", () => ({
   readGuestSession: mockReadGuestSession,
@@ -14,7 +14,7 @@ vi.mock("@/lib/csrf", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    participant: { findUnique: mockParticipantFindUnique },
+    prediction: { findUnique: mockPredictionFindUnique },
   },
 }));
 
@@ -33,9 +33,15 @@ import PredictionFormPage from "@/app/deelnemen/voorspelling/formulier/page";
 describe("XSS-beveiliging", () => {
   it("escaped gebruikersinvoer voordat die in HTML wordt gerenderd", async () => {
     mockReadGuestSession.mockResolvedValue({ sub: "participant-1", scope: "guest", exp: 9999999999 });
-    mockParticipantFindUnique.mockResolvedValue({ name: '<img src=x onerror="alert(1)">' });
+    mockPredictionFindUnique.mockResolvedValue({ 
+      predictedName: '<img src=x onerror="alert(1)">',
+      gender: "girl",
+      weightGrams: 3500,
+      heightCm: 52,
+      predictedBirthAt: new Date("2026-09-15T21:10:00Z"),
+    });
 
-    const html = renderToStaticMarkup(await PredictionFormPage());
+    const html = renderToStaticMarkup(await PredictionFormPage({ searchParams: Promise.resolve({}) }));
 
     expect(html).not.toContain('<img src=x onerror="alert(1)">');
     expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
