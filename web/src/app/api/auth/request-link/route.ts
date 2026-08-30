@@ -16,8 +16,8 @@ function getClientIp(request: NextRequest): string {
   return forwarded.split(",")[0]?.trim() || "unknown";
 }
 
-function genericRedirect(request: NextRequest) {
-  const url = new URL("/?mail=1", request.url);
+function genericRedirect() {
+  const url = new URL("/?mail=1", getEnv().APP_BASE_URL);
   return NextResponse.redirect(url);
 }
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     request.cookies.get("baby_csrf")?.value,
   )) {
     console.warn("[request-link] csrf_rejected");
-    return genericRedirect(request);
+    return genericRedirect();
   }
   const input = accessRequestSchema.safeParse({
     accessCode: formData.get("accessCode"),
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   if (!input.success) {
     console.warn("[request-link] input_rejected");
-    return genericRedirect(request);
+    return genericRedirect();
   }
 
   const { accessCode, name, email } = input.data;
@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
   const emailLimit = rateLimit(`mail:${ip}`, 10, 10 * 60 * 1000);
   if (!codeLimit.allowed || !emailLimit.allowed) {
     console.warn("[request-link] rate_limited");
-    return genericRedirect(request);
+    return genericRedirect();
   }
 
   console.info("[request-link] access_code_check_started");
   await syncAccessCodeFromEnv();
   if (!(await isValidAccessCode(accessCode))) {
     console.warn("[request-link] access_code_rejected");
-    return genericRedirect(request);
+    return genericRedirect();
   }
 
   console.info("[request-link] access_code_accepted");
@@ -95,5 +95,5 @@ export async function POST(request: NextRequest) {
   await sendMagicLink({ email, link: verifyUrl.toString(), purpose: "guest" });
 
   console.info("[request-link] completed");
-  return genericRedirect(request);
+  return genericRedirect();
 }

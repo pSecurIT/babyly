@@ -199,7 +199,7 @@ TimeoutStartSec=0
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
-systemctl enable "$APP_NAME.service"
+systemctl enable --now "$APP_NAME.service"
 
 ufw default deny incoming
 ufw default allow outgoing

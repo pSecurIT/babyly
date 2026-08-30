@@ -15,8 +15,8 @@ function getClientIp(request: NextRequest): string {
   return forwarded.split(",")[0]?.trim() || "unknown";
 }
 
-function genericRedirect(request: NextRequest) {
-  const url = new URL("/admin/login?mail=1", request.url);
+function genericRedirect() {
+  const url = new URL("/admin/login?mail=1", getEnv().APP_BASE_URL);
   return NextResponse.redirect(url);
 }
 
@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
     typeof csrfToken === "string" ? csrfToken : null,
     request.cookies.get("baby_csrf")?.value,
   )) {
-    return genericRedirect(request);
+    return genericRedirect();
   }
 
   // Honeypot: bots tend to fill every field, humans never see this one.
   if (formData.get("website")) {
-    return genericRedirect(request);
+    return genericRedirect();
   }
 
   const input = adminAccessRequestSchema.safeParse({
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (!input.success) {
-    return genericRedirect(request);
+    return genericRedirect();
   }
 
   const { email } = input.data;
@@ -51,12 +51,12 @@ export async function POST(request: NextRequest) {
   const emailLimit = rateLimit(`admin-mail:${email}`, 5, 30 * 60 * 1000);
   if (!ipLimit.allowed || !emailLimit.allowed) {
     console.warn("[admin-request-link] rate_limited");
-    return genericRedirect(request);
+    return genericRedirect();
   }
 
   if (!adminEmailSet().has(email)) {
     // Same generic response as a valid request to avoid allowlist enumeration.
-    return genericRedirect(request);
+    return genericRedirect();
   }
 
   const token = generateRandomToken();
@@ -80,5 +80,5 @@ export async function POST(request: NextRequest) {
 
   await sendMagicLink({ email, link: verifyUrl.toString(), purpose: "admin" });
 
-  return genericRedirect(request);
+  return genericRedirect();
 }
