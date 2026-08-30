@@ -56,7 +56,7 @@ describe("hergebruik van een bestaande sessie tussen beide flows", () => {
   });
 
   it("laat dezelfde sessie ook de adresflow openen zonder nieuwe magic link", async () => {
-    const element = await AddressFormPage({ searchParams: Promise.resolve({}) });
+    const element = await AddressFormPage();
     const html = renderToStaticMarkup(element);
 
     expect(html).toContain("Adres voor geboortekaartje");
@@ -74,7 +74,7 @@ describe("hergebruik van een bestaande sessie tussen beide flows", () => {
 
   it("gebruikt dezelfde sessie-lookup voor beide flows zonder extra token-uitgifte", async () => {
     await PredictionFormPage({ searchParams: Promise.resolve({}) });
-    await AddressFormPage({ searchParams: Promise.resolve({}) });
+    await AddressFormPage();
 
     expect(mockReadGuestSession).toHaveBeenCalledTimes(2);
     mockReadGuestSession.mock.results.forEach((result) => {
@@ -86,6 +86,6 @@ describe("hergebruik van een bestaande sessie tussen beide flows", () => {
     mockReadGuestSession.mockResolvedValue(null);
 
     await expect(PredictionFormPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/?auth=1");
-    await expect(AddressFormPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/?auth=1");
+    await expect(AddressFormPage()).rejects.toThrow("redirect:/?auth=1");
   });
 });
