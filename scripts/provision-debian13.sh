@@ -168,7 +168,8 @@ if [[ -f "$APP_WORKDIR/.env.production" ]]; then
   done
   
   # Run migrations as root in the app container
-  # Use npm exec to ensure we use the locally installed Prisma version
+  # First ensure dependencies are installed, then run migrations
+  /usr/bin/docker compose run --rm --user root app npm install
   /usr/bin/docker compose run --rm --user root app npm exec prisma -- migrate deploy
   
   # Stop the database for now (it will be started by the service)
