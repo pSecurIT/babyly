@@ -199,7 +199,9 @@ TimeoutStartSec=0
 WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
-systemctl enable --now "$APP_NAME.service"
+echo "Starting production application stack..." >&2
+/usr/bin/docker compose up -d --build
+systemctl enable "$APP_NAME.service"
 
 ufw default deny incoming
 ufw default allow outgoing
@@ -234,12 +236,11 @@ Application directory: $APP_DIR
 Compose directory:     $APP_WORKDIR
 Service:              $APP_NAME.service
 
-Before starting the service:
+Before deployment:
 1. Review and edit $APP_WORKDIR/.env.production.
 2. Configure Cloudflare DNS for baby.example.invalid.
 3. Configure Resend and SPF/DKIM/DMARC.
 4. Create /etc/babyly/backup-encryption-password with mode 600.
 5. Configure backup variables in $APP_WORKDIR/.env.production.
-6. Start with: systemctl start $APP_NAME.service
-7. Check with: docker compose ps && docker compose logs --tail=100 caddy
+6. Check with: docker compose ps && docker compose logs --tail=100 caddy
 EOF
