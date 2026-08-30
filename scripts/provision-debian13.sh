@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# Ensure root's PATH includes all necessary system directories
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}"
+
 APP_NAME="babyly"
 APP_USER="babyly"
 SSH_USER="deploy"
