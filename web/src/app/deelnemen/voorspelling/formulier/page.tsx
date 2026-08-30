@@ -22,9 +22,21 @@ export default async function PredictionFormPage(props: {
 
   const prediction = await prisma.prediction.findUnique({
     where: { participantId: session.sub },
-    select: { predictedName: true },
+    select: {
+      predictedName: true,
+      gender: true,
+      weightGrams: true,
+      heightCm: true,
+      predictedBirthAt: true,
+    },
   });
   const defaultPredictedName = prediction?.predictedName?.trim() || "";
+  const defaultBirthDate = prediction
+    ? `${prediction.predictedBirthAt.getFullYear()}-${String(prediction.predictedBirthAt.getMonth() + 1).padStart(2, "0")}-${String(prediction.predictedBirthAt.getDate()).padStart(2, "0")}`
+    : "";
+  const defaultBirthTime = prediction
+    ? `${String(prediction.predictedBirthAt.getHours()).padStart(2, "0")}:${String(prediction.predictedBirthAt.getMinutes()).padStart(2, "0")}`
+    : "";
   const csrfToken = await getCsrfToken();
 
   return (
@@ -76,7 +88,7 @@ export default async function PredictionFormPage(props: {
 
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Gegokt geslacht</span>
-            <select required name="gender" className="baby-input">
+            <select required name="gender" defaultValue={prediction?.gender ?? ""} className="baby-input">
               <option value="">Kies...</option>
               <option value="boy">Jongen ♂</option>
               <option value="girl">Meisje ♀</option>
@@ -85,23 +97,23 @@ export default async function PredictionFormPage(props: {
 
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Gegokt gewicht (kg)</span>
-            <input required step="0.01" min="0.5" max="10" type="number" name="weightKg" className="baby-input" />
+            <input required step="0.01" min="0.5" max="10" type="number" name="weightKg" defaultValue={prediction ? prediction.weightGrams / 1000 : ""} className="baby-input" />
           </label>
 
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Gegokte lengte (cm)</span>
-            <input required min="20" max="80" type="number" name="heightCm" className="baby-input" />
+            <input required min="20" max="80" type="number" name="heightCm" defaultValue={prediction?.heightCm ?? ""} className="baby-input" />
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Verwachte geboortedatum</span>
-              <input required type="date" name="birthDate" className="baby-input" />
+              <input required type="date" name="birthDate" defaultValue={defaultBirthDate} className="baby-input" />
             </label>
 
             <label className="block">
               <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Verwacht tijdstip</span>
-              <input required type="time" name="birthTime" className="baby-input" />
+              <input required type="time" name="birthTime" defaultValue={defaultBirthTime} className="baby-input" />
             </label>
           </div>
 

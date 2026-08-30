@@ -42,11 +42,9 @@ export default async function PredictionThanksPage() {
               ✏️ Voorspelling wijzigen
             </a>
           )}
-          {!session.crossPromptSeen?.predictionToAddress && (
-            <a href="/deelnemen/adres/formulier" className="baby-button-primary px-6 py-5 text-lg">
-              🏡 Mijn adres achterlaten
-            </a>
-          )}
+          <a href="/deelnemen/adres/formulier" className="baby-button-primary px-6 py-5 text-lg">
+            🏡 Mijn adres toevoegen
+          </a>
         </div>
       </div>
     </main>

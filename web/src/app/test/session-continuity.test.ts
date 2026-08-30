@@ -45,13 +45,24 @@ describe("hergebruik van een bestaande sessie tussen beide flows", () => {
   });
 
   it("laat een geverifieerde gebruiker de voorspelflow openen zonder nieuwe magic link", async () => {
-    mockPrisma.prediction.findUnique.mockResolvedValue({ predictedName: "Noor" });
+    mockPrisma.prediction.findUnique.mockResolvedValue({
+      predictedName: "Noor",
+      gender: "girl",
+      weightGrams: 3500,
+      heightCm: 52,
+      predictedBirthAt: new Date("2026-09-15T21:10:00"),
+    });
 
     const element = await PredictionFormPage({ searchParams: Promise.resolve({}) });
     const html = renderToStaticMarkup(element);
 
     expect(html).toContain("Wat denk jij?");
     expect(html).toContain('value="Noor"');
+    expect(html).toContain('value="girl" selected=""');
+    expect(html).toContain('value="3.5"');
+    expect(html).toContain('value="52"');
+    expect(html).toContain('value="2026-09-15"');
+    expect(html).toContain('value="21:10"');
     expect(html).not.toContain("accessCode");
   });
 
