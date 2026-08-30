@@ -9,6 +9,7 @@ describe("centrale security headers", () => {
 
   it("configureert browser security headers voor alle routes", async () => {
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("APP_BASE_URL", "https://baby.example.invalid");
 
     const rules = await nextConfig.headers?.();
     const route = rules?.find((rule) => rule.source === "/(.*)");
@@ -17,6 +18,7 @@ describe("centrale security headers", () => {
     expect(headers.get("Content-Security-Policy")).toContain("default-src 'self'");
     expect(headers.get("Content-Security-Policy")).toContain("frame-ancestors 'none'");
     expect(headers.get("Content-Security-Policy")).toContain("form-action 'self'");
+    expect(headers.get("Content-Security-Policy")).toContain("https://baby.example.invalid");
     expect(headers.get("Content-Security-Policy")).not.toContain("'unsafe-eval'");
     expect(headers.get("Strict-Transport-Security")).toBe(
       "max-age=31536000; includeSubDomains",

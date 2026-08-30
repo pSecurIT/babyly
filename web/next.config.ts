@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 function getSecurityHeaders() {
   const scriptSources = ["'self'", "'unsafe-inline'"];
+  const formActionSources = ["'self'"];
+  if (process.env.APP_BASE_URL) {
+    formActionSources.push(new URL(process.env.APP_BASE_URL).origin);
+  }
+
   if (process.env.NODE_ENV !== "production") {
     scriptSources.push("'unsafe-eval'");
   }
@@ -14,7 +19,7 @@ function getSecurityHeaders() {
       "base-uri 'self'",
       "object-src 'none'",
       "frame-ancestors 'none'",
-      "form-action 'self'",
+      `form-action ${formActionSources.join(" ")}`,
       "img-src 'self' data: blob:",
       `script-src ${scriptSources.join(" ")}`,
       "style-src 'self' 'unsafe-inline'",
