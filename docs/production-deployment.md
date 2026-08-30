@@ -285,4 +285,49 @@ e-mails en het privacycontactadres worden uitsluitend server-side ingesteld.
 
 De applicatie gebruikt in provider-modus de Resend API. De console-mailmodus
 blijft alleen bedoeld voor lokale ontwikkeling. Controleer na deployment met
-een echte testaanvraag dat de magic link aankomt en éénmalig werkt.
+een echte testaanvraag dat de magic link aankomt en éénmalig werkt. De
+verzending gebruikt een idempotency key op basis van de linkhash om dubbele
+verzending bij veilige retries te voorkomen.
+
+Magic links zijn maximaal 24 uur geldig zolang ze niet zijn gebruikt. Na een
+succesvolle verificatie wordt de link direct ongeldig en blijft de beveiligde
+gast- of adminsessie maximaal 24 uur geldig.
+
+Voor lokale diagnose bestaat `http://localhost:3000/test/email`. Deze pagina
+verstuurt alleen wanneer `NODE_ENV` niet `production` is en
+`EMAIL_TEST_RECIPIENT` expliciet is ingesteld. Bezoek de pagina niet op de
+publieke productiehost; gebruik de gewone authflow voor productievalidatie.
+
+Voor diagnose van de gewone homeflow toont de serverlog veilige fasesignalen:
+
+```text
+[request-link] csrf_rejected
+[request-link] input_rejected
+[request-link] rate_limited
+[request-link] access_code_check_started
+[request-link] access_code_rejected
+[request-link] access_code_accepted
+[request-link] token_created
+[email] provider_accepted
+[email] provider_failed
+[email] provider_rejected
+[request-link] completed
+```
+
+Bij een geslaagde aanvraag verwacht je `access_code_accepted`, `token_created`,
+`[email] provider_accepted` en `completed`. Ontbreekt `provider_accepted`, dan
+bereikt de aanvraag Resend niet of weigert Resend hem. De logs bevatten bewust
+geen IP-adres, e-mailadres, toegangscode, token of API-key.
+
+Voor tijdelijke lokale diagnose kan in `web/.env` worden ingesteld:
+
+```env
+ENVIRONMENT_NAME="baby-local"
+CSRF_BYPASS_LOCAL_ONLY="true"
+```
+
+Herstart daarna de developmentserver en test de homeflow één keer. Deze
+bypass werkt uitsluitend buiten productie en is alleen bedoeld om vast te
+stellen of CSRF de resterende fout veroorzaakt. Zet hem daarna direct
+terug naar `false` en herstart de server opnieuw. Zet deze variabele nooit in
+`.env.production`.

@@ -12,7 +12,7 @@ describe("security en sessies", () => {
     process.env.APP_BASE_URL = "http://localhost:3000";
     process.env.ACCESS_CODE = "test-code";
     process.env.SESSION_SECRET = "abcdefghijklmnopqrstuvwx1234567890";
-    process.env.MAGIC_LINK_TTL_MINUTES = "15";
+    process.env.MAGIC_LINK_TTL_MINUTES = "1440";
     process.env.EMAIL_DELIVERY_MODE = "console";
     process.env.ADMIN_EMAILS = "parent@example.com, helper@example.com";
     process.env.PRIVACY_CONTACT_EMAIL = "privacy@example.com";
@@ -70,11 +70,30 @@ describe("security en sessies", () => {
     expect(allows.has("stranger@example.com")).toBe(false);
   });
 
+  it("staat magic-link TTL tot 24 uur toe", () => {
+    expect(getEnv().MAGIC_LINK_TTL_MINUTES).toBe(1440);
+  });
+
   it("accepteert alleen een CSRF-token dat gelijk is aan de cookie", () => {
     const token = "a".repeat(64);
 
     expect(isValidCsrfToken(token, token)).toBe(true);
     expect(isValidCsrfToken(null, token)).toBe(false);
     expect(isValidCsrfToken(token, "b".repeat(64))).toBe(false);
+  });
+
+  it("staat CSRF-bypass alleen toe voor de expliciete lokale omgeving", () => {
+    const originalEnvironment = process.env.ENVIRONMENT_NAME;
+    const originalBypass = process.env.CSRF_BYPASS_LOCAL_ONLY;
+
+    process.env.ENVIRONMENT_NAME = "baby-local";
+    process.env.CSRF_BYPASS_LOCAL_ONLY = "true";
+    expect(isValidCsrfToken(null, undefined)).toBe(true);
+
+    process.env.ENVIRONMENT_NAME = "baby-production";
+    expect(isValidCsrfToken(null, undefined)).toBe(false);
+
+    process.env.ENVIRONMENT_NAME = originalEnvironment;
+    process.env.CSRF_BYPASS_LOCAL_ONLY = originalBypass;
   });
 });

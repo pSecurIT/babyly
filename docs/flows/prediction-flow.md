@@ -9,6 +9,8 @@ Gebruiker vult veilige babyvoorspelling in en mag maximaal eenmaal wijzigen.
 3. Gebruiker verifieert via de link en komt terug op de landingspagina, nu als kiezer tussen voorspelling en adres.
 4. Gebruiker kiest voorspelling.
 5. Gebruiker vult voorspelformulier in.
+	De gegokte naam is de voorspelde babynaam en staat los van de naam van de
+	deelnemer die bij de magic-linkaanvraag is ingevuld.
 6. Backend valideert en slaat op.
 7. Gebruiker ziet bevestiging en melding: nog één wijziging mogelijk.
 8. Eventuele wijziging verhoogt edit_count naar 1 en zet record definitief.

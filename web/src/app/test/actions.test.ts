@@ -86,6 +86,7 @@ describe("business rules en flowafhandeling", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           participantId: "participant-123",
+          predictedName: "Emma",
           gender: "girl",
           weightGrams: 3500,
           heightCm: 52,
@@ -93,6 +94,7 @@ describe("business rules en flowafhandeling", () => {
       }),
     );
     expect(mockMarkCrossPromptSeen).toHaveBeenCalledWith("predictionToAddress");
+    expect(tx.participant.update).not.toHaveBeenCalled();
   });
 
   it("laat een eerste wijziging toe en blokkeert de tweede wijziging", async () => {
@@ -120,6 +122,9 @@ describe("business rules en flowafhandeling", () => {
     await expect(submitPredictionAction(formData)).rejects.toThrow(
       "/deelnemen/voorspelling/bedankt",
     );
+    expect(tx.prediction.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ predictedName: "Emma" }),
+    }));
 
     tx.prediction.findUnique.mockResolvedValueOnce({ editCount: 1, lockedAt: new Date() });
     await expect(submitPredictionAction(formData)).rejects.toThrow(

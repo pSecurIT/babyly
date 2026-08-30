@@ -16,14 +16,15 @@ Minimaal relationeel model met harde server-side constraints.
 ### predictions
 1. id (pk)
 2. participant_id (fk -> participants.id, unique)
-3. gender (enum: boy, girl)
-4. weight_grams (int)
-5. height_cm (int)
-6. predicted_birth_at (timestamp)
-7. edit_count (int default 0)
-8. locked_at (nullable timestamp)
-9. created_at
-10. updated_at
+3. predicted_name (naam die de deelnemer voor de baby voorspelt)
+4. gender (enum: boy, girl)
+5. weight_grams (int)
+6. height_cm (int)
+7. predicted_birth_at (timestamp)
+8. edit_count (int default 0)
+9. locked_at (nullable timestamp)
+10. created_at
+11. updated_at
 
 ### address_cards
 1. id (pk)

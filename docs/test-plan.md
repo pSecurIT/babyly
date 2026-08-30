@@ -57,6 +57,27 @@ ephemeral PostgreSQL-service, initialiseert het schema, installeert Chromium
 en voert unit-, security- en volledige E2E-tests uit met `E2E_RUN_FULL=1`.
 De CI-credentials zijn uitsluitend testwaarden en bevatten geen secrets.
 
+## Lokale e-mailtest
+
+Voor een directe Resend-test zonder de volledige authflow:
+
+1. Voeg lokaal aan `web/.env` toe:
+
+```env
+EMAIL_DELIVERY_MODE="provider"
+EMAIL_TEST_RECIPIENT="jouw-eigen-e-mailadres"
+```
+
+2. Controleer dat `EMAIL_FROM` en `RESEND_API_KEY` ook lokaal zijn ingesteld.
+3. Herstart de developmentserver na een wijziging van `.env`.
+4. Open `http://localhost:3000/test/email` precies eenmaal.
+
+De pagina verstuurt bij laden één eenvoudige testmail. Een refresh verstuurt
+opnieuw een mail. De pagina werkt niet in productie. De serverlog gebruikt
+alleen `[email-test] sending`, `[email-test] sent` met een Resend message-id,
+of `[email-test] provider_failed`; ontvanger, API-key en mailinhoud worden niet
+gelogd.
+
 De actuele browserchecks zijn:
 
 - publieke authpagina met CSRF-token;

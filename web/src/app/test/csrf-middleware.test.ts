@@ -5,7 +5,8 @@ import { middleware } from "../../../middleware";
 
 describe("CSRF middleware", () => {
   it("maakt een beveiligde CSRF-cookie aan als die ontbreekt", () => {
-    const response = middleware(new NextRequest("http://localhost:3000/"));
+    const request = new NextRequest("http://localhost:3000/");
+    const response = middleware(request);
     const cookie = response.cookies.get("baby_csrf");
 
     expect(cookie?.value).toMatch(/^[a-f0-9]{64}$/);
@@ -21,5 +22,14 @@ describe("CSRF middleware", () => {
     const response = middleware(request);
 
     expect(response.cookies.get("baby_csrf")).toBeUndefined();
+  });
+
+  it("vervangt een ongeldige CSRF-cookie", () => {
+    const request = new NextRequest("http://localhost:3000/");
+    request.cookies.set("baby_csrf", "invalid");
+
+    const response = middleware(request);
+
+    expect(response.cookies.get("baby_csrf")?.value).toMatch(/^[a-f0-9]{64}$/);
   });
 });

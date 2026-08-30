@@ -106,7 +106,7 @@ Behandel beveiliging als kernvereiste. Belangrijke controles zijn uitsluitend se
 ### E-mailverificatie
 
 1. Gebruik cryptografisch veilige, willekeurige, eenmalige tokens/codes.
-2. Verlooptijd: bijvoorbeeld 15 minuten.
+2. Verlooptijd: maximaal 24 uur.
 3. Token is single-use.
 4. Sla token niet in plaintext op; bewaar hash.
 5. Rate-limit op aanvragen en retries.

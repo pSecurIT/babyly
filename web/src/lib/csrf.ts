@@ -1,13 +1,25 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { generateRandomToken, safeEqualHex, sha256Hex } from "@/lib/security";
 
 export const CSRF_COOKIE = "baby_csrf";
+const CSRF_REQUEST_HEADER = "x-baby-csrf-token";
+
+function localCsrfBypassEnabled(): boolean {
+  return process.env.NODE_ENV !== "production"
+    && process.env.ENVIRONMENT_NAME === "baby-local"
+    && process.env.CSRF_BYPASS_LOCAL_ONLY === "true";
+}
 
 function isToken(value: string | undefined): value is string {
   return Boolean(value && /^[a-f0-9]{64}$/i.test(value));
 }
 
 export async function getCsrfToken(): Promise<string> {
+  const requestToken = (await headers()).get(CSRF_REQUEST_HEADER);
+  if (requestToken && isToken(requestToken)) {
+    return requestToken;
+  }
+
   const cookieStore = await cookies();
   const existing = cookieStore.get(CSRF_COOKIE)?.value;
   if (isToken(existing)) {
@@ -18,6 +30,10 @@ export async function getCsrfToken(): Promise<string> {
 }
 
 export function isValidCsrfToken(formToken: string | null, cookieToken: string | undefined): boolean {
+  if (localCsrfBypassEnabled()) {
+    return true;
+  }
+
   if (!formToken || !isToken(formToken) || !isToken(cookieToken)) {
     return false;
   }

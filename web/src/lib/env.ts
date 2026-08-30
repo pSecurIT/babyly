@@ -6,12 +6,13 @@ const envSchema = z.object({
   APP_BASE_URL: z.string().url(),
   ACCESS_CODE: z.string().trim().min(6).max(120),
   SESSION_SECRET: z.string().min(32),
-  MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().min(5).max(60).default(15),
+  MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().min(5).max(24 * 60).default(24 * 60),
   EMAIL_DELIVERY_MODE: z.enum(["console", "provider"]).default("console"),
   ADMIN_EMAILS: z.string().default(""),
   PRIVACY_CONTACT_EMAIL: z.string().email(),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).optional(),
+  EMAIL_TEST_RECIPIENT: z.string().email().optional(),
 }).superRefine((values, ctx) => {
   if (values.EMAIL_DELIVERY_MODE === "provider") {
     if (!values.RESEND_API_KEY) {

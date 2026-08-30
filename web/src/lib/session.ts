@@ -15,6 +15,7 @@ type SessionPayload = {
 };
 
 const SESSION_COOKIE = "baby_session";
+const GUEST_SESSION_TTL_SECONDS = 60 * 60 * 24;
 
 function encodePayload(payload: SessionPayload): string {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
@@ -106,13 +107,13 @@ export async function readAdminSession() {
 
 export async function persistGuestSession(sub: string) {
   const cookieStore = await cookies();
-  const value = createSessionValue(sub, "guest", 60 * 60 * 8);
+  const value = createSessionValue(sub, "guest", GUEST_SESSION_TTL_SECONDS);
   cookieStore.set(SESSION_COOKIE, value, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 8,
+    maxAge: GUEST_SESSION_TTL_SECONDS,
   });
 }
 

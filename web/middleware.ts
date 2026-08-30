@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const CSRF_COOKIE = "baby_csrf";
+const CSRF_REQUEST_HEADER = "x-baby-csrf-token";
+
+function isValidToken(value: string | undefined): value is string {
+  return Boolean(value && /^[a-f0-9]{64}$/i.test(value));
+}
 
 function generateCsrfToken(): string {
   const bytes = new Uint8Array(32);
@@ -9,10 +14,16 @@ function generateCsrfToken(): string {
 }
 
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  const existingToken = request.cookies.get(CSRF_COOKIE)?.value;
+  const token = isValidToken(existingToken) ? existingToken : generateCsrfToken();
+  const shouldSetCookie = token !== existingToken;
+  requestHeaders.set(CSRF_REQUEST_HEADER, token);
 
-  if (!request.cookies.get(CSRF_COOKIE)?.value) {
-    response.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+
+  if (shouldSetCookie) {
+    response.cookies.set(CSRF_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",

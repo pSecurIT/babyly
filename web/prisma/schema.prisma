@@ -48,6 +48,7 @@ model Prediction {
   id               String      @id @default(cuid())
   participantId    String      @unique
   participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  predictedName    String      @default("")
   gender           Gender
   weightGrams      Int
   heightCm         Int

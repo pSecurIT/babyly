@@ -96,8 +96,9 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
           <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-[#cfecc7] text-left text-[#4f6a5d]">
-                <th className="py-2 pr-4">Naam</th>
+                <th className="py-2 pr-4">Deelnemer</th>
                 <th className="py-2 pr-4">E-mail</th>
+                <th className="py-2 pr-4">Gegokte naam</th>
                 <th className="py-2 pr-4">Geslacht</th>
                 <th className="py-2 pr-4">Gewicht</th>
                 <th className="py-2 pr-4">Lengte</th>
@@ -111,6 +112,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
                 <tr key={prediction.id} className="border-b border-[#ebf5e8]">
                   <td className="py-2 pr-4">{prediction.participant?.name ?? "-"}</td>
                   <td className="py-2 pr-4">{prediction.participant?.email ?? "-"}</td>
+                  <td className="py-2 pr-4">{prediction.predictedName}</td>
                   <td className="py-2 pr-4">{prediction.gender === "boy" ? "Jongen" : "Meisje"}</td>
                   <td className="py-2 pr-4">{(prediction.weightGrams / 1000).toFixed(2)} kg</td>
                   <td className="py-2 pr-4">{prediction.heightCm} cm</td>
@@ -138,7 +140,7 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
               ))}
               {predictions.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-4 text-center text-[#4f6a5d]">
+                  <td colSpan={9} className="py-4 text-center text-[#4f6a5d]">
                     Nog geen voorspellingen.
                   </td>
                 </tr>

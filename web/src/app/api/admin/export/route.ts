@@ -29,6 +29,7 @@ export async function GET() {
       email: true,
       prediction: {
         select: {
+          predictedName: true,
           gender: true,
           weightGrams: true,
           heightCm: true,
@@ -54,6 +55,7 @@ export async function GET() {
   const header = toRow([
     "name",
     "email",
+    "prediction_name",
     "prediction_gender",
     "prediction_weight_grams",
     "prediction_height_cm",
@@ -75,6 +77,7 @@ export async function GET() {
     return toRow([
       participant.name ?? "",
       participant.email,
+      prediction?.predictedName ?? "",
       prediction?.gender ?? "",
       prediction?.weightGrams ?? "",
       prediction?.heightCm ?? "",

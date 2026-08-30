@@ -36,11 +36,6 @@ export async function submitPredictionAction(formData: FormData) {
   const weightGrams = Math.round(parsed.data.weightKg * 1000);
 
   const result = await prisma.$transaction(async (tx) => {
-    await tx.participant.update({
-      where: { id: session.sub },
-      data: { name: parsed.data.name },
-    });
-
     const existing = await tx.prediction.findUnique({
       where: { participantId: session.sub },
     });
@@ -49,6 +44,7 @@ export async function submitPredictionAction(formData: FormData) {
       await tx.prediction.create({
         data: {
           participantId: session.sub,
+          predictedName: parsed.data.name,
           gender: parsed.data.gender,
           weightGrams,
           heightCm: parsed.data.heightCm,
@@ -66,6 +62,7 @@ export async function submitPredictionAction(formData: FormData) {
     await tx.prediction.update({
       where: { participantId: session.sub },
       data: {
+        predictedName: parsed.data.name,
         gender: parsed.data.gender,
         weightGrams,
         heightCm: parsed.data.heightCm,

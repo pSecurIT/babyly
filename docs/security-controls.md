@@ -4,7 +4,8 @@
 1. Toegangscode hash vergelijken op server.
 2. Magic link token cryptografisch random.
 3. Alleen token-hash opslaan.
-4. Token TTL kort houden, bijvoorbeeld 15 minuten.
+4. Token TTL maximaal 24 uur houden; een geverifieerde sessie blijft eveneens
+    maximaal 24 uur geldig.
 5. Token single-use afdwingen met atomaire update.
 
 ## Autorisatie

@@ -72,7 +72,7 @@ describe("magic-link security", () => {
     );
 
     expect(response.headers.get("location")).toBe("http://localhost:3000/");
-    expect(mockCreateSessionValue).toHaveBeenCalledWith("participant-1", "guest", 60 * 60 * 8);
+    expect(mockCreateSessionValue).toHaveBeenCalledWith("participant-1", "guest", 60 * 60 * 24);
   });
 
   it("vervangt een bestaande sessiecookie na verificatie", async () => {

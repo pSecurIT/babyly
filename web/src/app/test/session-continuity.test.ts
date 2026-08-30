@@ -45,12 +45,13 @@ describe("hergebruik van een bestaande sessie tussen beide flows", () => {
   });
 
   it("laat een geverifieerde gebruiker de voorspelflow openen zonder nieuwe magic link", async () => {
-    mockPrisma.participant.findUnique.mockResolvedValue({ name: "Emma" });
+    mockPrisma.prediction.findUnique.mockResolvedValue({ predictedName: "Noor" });
 
     const element = await PredictionFormPage();
     const html = renderToStaticMarkup(element);
 
-    expect(html).toContain("Wat denk jij, Emma?");
+    expect(html).toContain("Wat denk jij?");
+    expect(html).toContain('value="Noor"');
     expect(html).not.toContain("accessCode");
   });
 

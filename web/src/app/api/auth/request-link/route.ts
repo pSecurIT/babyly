@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     typeof csrfToken === "string" ? csrfToken : null,
     request.cookies.get("baby_csrf")?.value,
   )) {
+    console.warn("[request-link] csrf_rejected");
     return genericRedirect(request);
   }
   const input = accessRequestSchema.safeParse({
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (!input.success) {
+    console.warn("[request-link] input_rejected");
     return genericRedirect(request);
   }
 
@@ -51,11 +53,14 @@ export async function POST(request: NextRequest) {
     return genericRedirect(request);
   }
 
+  console.info("[request-link] access_code_check_started");
   await syncAccessCodeFromEnv();
   if (!(await isValidAccessCode(accessCode))) {
+    console.warn("[request-link] access_code_rejected");
     return genericRedirect(request);
   }
 
+  console.info("[request-link] access_code_accepted");
   const token = generateRandomToken();
   const tokenHash = sha256Hex(token);
   const expiresAt = new Date(Date.now() + env.MAGIC_LINK_TTL_MINUTES * 60 * 1000);
@@ -79,6 +84,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  console.info("[request-link] token_created");
   const verifyUrl = new URL("/api/auth/verify", env.APP_BASE_URL);
   verifyUrl.searchParams.set("token", token);
   verifyUrl.searchParams.set("email", email);
@@ -88,5 +94,6 @@ export async function POST(request: NextRequest) {
 
   await sendMagicLink({ email, link: verifyUrl.toString(), purpose: "guest" });
 
+  console.info("[request-link] completed");
   return genericRedirect(request);
 }

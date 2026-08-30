@@ -70,12 +70,12 @@ export async function GET(request: NextRequest) {
     }
 
     const response = NextResponse.redirect(new URL(next, request.url));
-    response.cookies.set("baby_session", createSessionValue(email, "admin", 60 * 60), {
+    response.cookies.set("baby_session", createSessionValue(email, "admin", 60 * 60 * 24), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60,
+      maxAge: 60 * 60 * 24,
     });
     return response;
   }
@@ -96,12 +96,12 @@ export async function GET(request: NextRequest) {
   });
 
   const response = NextResponse.redirect(new URL(next, request.url));
-  response.cookies.set("baby_session", createSessionValue(participant.id, "guest", 60 * 60 * 8), {
+  response.cookies.set("baby_session", createSessionValue(participant.id, "guest", 60 * 60 * 24), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 8,
+    maxAge: 60 * 60 * 24,
   });
 
   return response;

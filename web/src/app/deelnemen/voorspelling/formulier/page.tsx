@@ -10,11 +10,11 @@ export default async function PredictionFormPage() {
     redirect("/?auth=1");
   }
 
-  const participant = await prisma.participant.findUnique({
-    where: { id: session.sub },
-    select: { name: true },
+  const prediction = await prisma.prediction.findUnique({
+    where: { participantId: session.sub },
+    select: { predictedName: true },
   });
-  const defaultName = participant?.name?.trim() || "";
+  const defaultPredictedName = prediction?.predictedName?.trim() || "";
   const csrfToken = await getCsrfToken();
 
   return (
@@ -27,14 +27,14 @@ export default async function PredictionFormPage() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-extrabold text-[#234a37]">Wat denk jij, {defaultName || "vriend"}?</h1>
+        <h1 className="text-3xl font-extrabold text-[#234a37]">Wat denk jij?</h1>
         <p className="mt-3 text-[#3c594b]">Je kunt je voorspelling eenmalig aanpassen.</p>
 
         <form action={submitPredictionAction} className="mt-8 space-y-4">
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <label className="block">
             <span className="mb-1 block text-sm font-bold text-[#2b4a3a]">Gegokte naam</span>
-            <input required name="name" defaultValue={defaultName} className="baby-input" />
+            <input required name="name" defaultValue={defaultPredictedName} className="baby-input" />
           </label>
 
           <label className="block">

@@ -38,7 +38,15 @@ describe("admin CSV-export", () => {
         name: "Jan, Jansen",
         email: "jan@example.com",
         emailVerifiedAt: null,
-        prediction: null,
+        prediction: {
+          predictedName: "Noor",
+          gender: "girl",
+          weightGrams: 3500,
+          heightCm: 52,
+          predictedBirthAt: new Date("2026-09-15T21:10:00Z"),
+          editCount: 0,
+          lockedAt: null,
+        },
         addressCard: null,
         createdAt: new Date("2026-08-26T12:00:00Z"),
       },
@@ -55,6 +63,7 @@ describe("admin CSV-export", () => {
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(csv).toContain('"Jan, Jansen"');
     expect(csv).toContain("jan@example.com");
+    expect(csv).toContain("Noor");
     expect(infoSpy).toHaveBeenCalledWith("[admin-audit] csv_exported");
     expect(infoSpy.mock.calls.flat().join(" ")).not.toContain("admin@example.com");
     expect(mockPrisma.participant.findMany).toHaveBeenCalledWith(expect.objectContaining({
