@@ -61,6 +61,12 @@ ADMIN_EMAILS="ouder1@example.com,ouder2@example.com"
 PRIVACY_CONTACT_EMAIL="privacy@example.com"
 ```
 
+Voor productie moet `.env.production` de publieke HTTPS-origin bevatten. Deze waarde wordt gebruikt voor magic links en voor de redirect nadat een link is geopend:
+
+```env
+APP_BASE_URL="https://baby.example.invalid"
+```
+
 ### Starten
 
 ```powershell

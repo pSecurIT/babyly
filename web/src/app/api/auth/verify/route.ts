@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { adminEmailSet } from "@/lib/env";
+import { adminEmailSet, getEnv } from "@/lib/env";
 import { createSessionValue } from "@/lib/session";
 import { sha256Hex } from "@/lib/security";
 
@@ -17,8 +17,8 @@ function safeNextPath(input: string | null): string {
   return input;
 }
 
-function applicationRedirect(request: NextRequest, path: string) {
-  return NextResponse.redirect(new URL(path, request.url));
+function applicationRedirect(path: string) {
+  return NextResponse.redirect(new URL(path, getEnv().APP_BASE_URL));
 }
 
 export async function GET(request: NextRequest) {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   const next = safeNextPath(url.searchParams.get("next"));
 
   if (!token || !emailRaw || (scope !== "guest" && scope !== "admin")) {
-    return applicationRedirect(request, "/?auth=failed");
+    return applicationRedirect("/?auth=failed");
   }
 
   const failureRedirect = scope === "admin" ? "/admin/login?auth=failed" : "/?auth=failed";
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   });
 
   if (!tokenRecord) {
-    return applicationRedirect(request, failureRedirect);
+    return applicationRedirect(failureRedirect);
   }
 
   const consumed = await prisma.magicLinkToken.updateMany({
@@ -64,16 +64,16 @@ export async function GET(request: NextRequest) {
   });
 
   if (consumed.count !== 1) {
-    return applicationRedirect(request, failureRedirect);
+    return applicationRedirect(failureRedirect);
   }
 
   if (scope === "admin") {
     const allowlist = adminEmailSet();
     if (!allowlist.has(email)) {
-      return applicationRedirect(request, failureRedirect);
+      return applicationRedirect(failureRedirect);
     }
 
-    const response = applicationRedirect(request, next);
+    const response = applicationRedirect(next);
     response.cookies.set("baby_session", createSessionValue(email, "admin", 60 * 60 * 24), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const response = applicationRedirect(request, next);
+  const response = applicationRedirect(next);
   response.cookies.set("baby_session", createSessionValue(participant.id, "guest", 60 * 60 * 24), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
