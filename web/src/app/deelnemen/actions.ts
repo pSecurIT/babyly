@@ -107,20 +107,30 @@ export async function submitAddressAction(formData: FormData) {
   });
 
   if (existing) {
-    redirect("/deelnemen/adres/formulier?error=bestaat");
+    await prisma.addressCard.update({
+      where: { id: existing.id },
+      data: {
+        recipientName: parsed.data.recipientName,
+        street: parsed.data.street,
+        houseNumber: parsed.data.houseNumber,
+        postalCode: parsed.data.postalCode,
+        city: parsed.data.city,
+        country: parsed.data.country,
+      },
+    });
+  } else {
+    await prisma.addressCard.create({
+      data: {
+        participantId: session.sub,
+        recipientName: parsed.data.recipientName,
+        street: parsed.data.street,
+        houseNumber: parsed.data.houseNumber,
+        postalCode: parsed.data.postalCode,
+        city: parsed.data.city,
+        country: parsed.data.country,
+      },
+    });
   }
-
-  await prisma.addressCard.create({
-    data: {
-      participantId: session.sub,
-      recipientName: parsed.data.recipientName,
-      street: parsed.data.street,
-      houseNumber: parsed.data.houseNumber,
-      postalCode: parsed.data.postalCode,
-      city: parsed.data.city,
-      country: parsed.data.country,
-    },
-  });
 
   await markCrossPromptSeen("addressToPrediction");
   redirect("/deelnemen/adres/bedankt");

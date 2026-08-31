@@ -32,13 +32,14 @@ export default async function AddressThanksPage() {
           We hebben je adres opgeslagen voor het geboortekaartje.
         </p>
 
-        {!session.crossPromptSeen?.addressToPrediction && (
-          <div className="mt-8">
-            <a href="/deelnemen/voorspelling/formulier" className="baby-button-primary block px-6 py-5 text-center text-lg">
-              🔮 Mijn voorspelling invullen
-            </a>
-          </div>
-        )}
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <a href="/deelnemen/voorspelling/formulier" className="baby-button-primary px-6 py-5 text-center text-lg">
+            🔮 Voorspelling invullen of aanpassen
+          </a>
+          <a href="/deelnemen/adres/formulier" className="baby-button-secondary px-6 py-5 text-center text-lg">
+            ✏️ Mijn adres aanpassen
+          </a>
+        </div>
       </div>
     </main>
   );

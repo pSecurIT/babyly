@@ -16,6 +16,7 @@ const { mockMarkCrossPromptSeen, mockReadGuestSession, mockPrisma } = vi.hoisted
     addressCard: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
   };
 
@@ -55,6 +56,7 @@ describe("business rules en flowafhandeling", () => {
     mockPrisma.prediction.update.mockReset();
     mockPrisma.addressCard.findUnique.mockReset();
     mockPrisma.addressCard.create.mockReset();
+    mockPrisma.addressCard.update.mockReset();
   });
 
   it("maakt een eerste voorspelling aan en stuurt een cross-prompt mee", async () => {
@@ -138,7 +140,7 @@ describe("business rules en flowafhandeling", () => {
     }));
   });
 
-  it("verhoogt de adresregel maximaal één adres per participant", async () => {
+  it("wijzigt een bestaand adres in plaats van een tweede adres aan te maken", async () => {
     mockReadGuestSession.mockResolvedValue({ sub: "participant-123", scope: "guest", exp: 9999999999 });
     mockPrisma.addressCard.findUnique.mockResolvedValue({ id: "address-1" });
 
@@ -151,9 +153,20 @@ describe("business rules en flowafhandeling", () => {
     formData.set("country", "Nederland");
 
     await expect(submitAddressAction(formData)).rejects.toThrow(
-      "/deelnemen/adres/formulier?error=bestaat",
+      "/deelnemen/adres/bedankt",
     );
     expect(mockPrisma.addressCard.create).not.toHaveBeenCalled();
+    expect(mockPrisma.addressCard.update).toHaveBeenCalledWith({
+      where: { id: "address-1" },
+      data: {
+        recipientName: "Jan Jansen",
+        street: "Kerkstraat",
+        houseNumber: "12A",
+        postalCode: "1234 AB",
+        city: "Utrecht",
+        country: "Nederland",
+      },
+    });
   });
 
   it("maakt een adres aan en stuurt naar de bedankpagina", async () => {
