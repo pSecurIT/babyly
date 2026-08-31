@@ -78,7 +78,7 @@ async function renderPages() {
   mockPrisma.participant.findUnique.mockResolvedValue({ name: "Emma" });
   mockPrisma.prediction.findUnique.mockResolvedValue({ predictedName: "Emma" });
   const prediction = renderToStaticMarkup(await PredictionFormPage({ searchParams: Promise.resolve({}) }));
-  const address = renderToStaticMarkup(await AddressFormPage());
+  const address = renderToStaticMarkup(await AddressFormPage({ searchParams: Promise.resolve({}) }));
 
   mockReadAdminSession.mockResolvedValue(adminSession);
   mockPrisma.participant.count.mockResolvedValue(0);
