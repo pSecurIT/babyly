@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readGuestSession } from "@/lib/session";
 import { getEnv } from "@/lib/env";
+import { BackButton } from "@/components/BackButton";
 
 export default async function PredictionThanksPage() {
   const session = await readGuestSession();
@@ -24,6 +25,7 @@ export default async function PredictionThanksPage() {
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-16">
       <div className="baby-card p-6 sm:p-8">
+        <BackButton />
         <div className="mb-6 flex items-center gap-3">
           <span className="baby-emoji text-xl" aria-hidden="true">🎉</span>
           <div>

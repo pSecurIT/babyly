@@ -3,6 +3,7 @@ type AdminLoginProps = {
 };
 
 import { getCsrfToken } from "@/lib/csrf";
+import { BackButton } from "@/components/BackButton";
 
 export default async function AdminLoginPage({ searchParams }: AdminLoginProps) {
   const params = await searchParams;
@@ -13,6 +14,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginProps) 
   return (
     <main className="mx-auto w-full max-w-md px-6 py-16 sm:py-24">
       <div className="baby-card p-6 sm:p-8">
+        <BackButton />
         <div className="mb-6 flex items-center gap-3">
           <span className="baby-emoji text-xl" aria-hidden="true">🔐</span>
           <p className="baby-tag text-[0.62rem]">admin</p>
