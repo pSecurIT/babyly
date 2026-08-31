@@ -75,6 +75,19 @@ describe("magic-link security", () => {
     expect(mockCreateSessionValue).toHaveBeenCalledWith("participant-1", "guest", 60 * 60 * 24);
   });
 
+  it("behoudt de oorsprong van de verificatielink bij succesvolle verificatie", async () => {
+    mockPrisma.magicLinkToken.findFirst.mockResolvedValue({ id: "token-1" });
+    mockPrisma.magicLinkToken.updateMany.mockResolvedValue({ count: 1 });
+    mockPrisma.participant.upsert.mockResolvedValue({ id: "participant-1" });
+    mockCreateSessionValue.mockReturnValue("signed-session");
+
+    const response = await GET(new NextRequest(
+      "https://baby.example.invalid/api/auth/verify?token=token-1&email=user@example.com&scope=guest",
+    ));
+
+    expect(response.headers.get("location")).toBe("https://baby.example.invalid/");
+  });
+
   it("vervangt een bestaande sessiecookie na verificatie", async () => {
     mockPrisma.magicLinkToken.findFirst.mockResolvedValue({ id: "token-1" });
     mockPrisma.magicLinkToken.updateMany.mockResolvedValue({ count: 1 });
