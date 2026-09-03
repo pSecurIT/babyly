@@ -52,7 +52,7 @@ test.describe("Babyly browser security and flows", () => {
         page.waitForURL(/\/deelnemen\/voorspelling\/bedankt$/),
         page.getByRole("button", { name: /voorspelling opslaan/i }).click(),
       ]);
-      await expect(page.getByRole("link", { name: /adres achterlaten/i })).toBeVisible();
+      await expect(page.getByRole("link", { name: /mijn adres toevoegen/i })).toBeVisible();
     });
 
     test("completes address and shows the prediction cross-prompt", async ({ page }) => {
