@@ -18,6 +18,7 @@
 6. Verlopen/gebruikte tokens worden periodiek opgeruimd
 
 ### E-mailverificatie
+
 1. Magic link bevat token, email, scope, next-redirect
 2. Verificatie endpoint: token hash lookup + expiry check + single-use guard
 3. Admin scope: extra allowlist check (`adminEmailSet()`)
