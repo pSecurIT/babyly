@@ -331,3 +331,45 @@ bypass werkt uitsluitend buiten productie en is alleen bedoeld om vast te
 stellen of CSRF de resterende fout veroorzaakt. Zet hem daarna direct
 terug naar `false` en herstart de server opnieuw. Zet deze variabele nooit in
 `.env.production`.
+
+## GitHub Actions CI/CD
+
+Elke pull request en push naar `main` start de workflow
+`.github/workflows/ci.yml`. De workflow controleert linting, TypeScript,
+unit/securitytests, de volledige database-backed Playwright-suite, de
+Next.js-productiebuild en het Docker-image. De E2E-job gebruikt een tijdelijke
+PostgreSQL 16-service en past de gecommitete Prisma-migraties toe.
+
+Een succesvolle push naar `main` start daarna
+`.github/workflows/deploy.yml`. De productieomgeving in GitHub moet een
+verplichte goedkeuring hebben. Deployments worden geserialiseerd en zetten
+precies de SHA van de geteste workflow-run uit op de server. De actie voert
+Prisma-migraties uit, bouwt de Compose-stack opnieuw op en controleert daarna
+de HTTPS-homepage.
+
+Configureer in de beschermde GitHub Environment `production` uitsluitend deze
+secrets:
+
+- `DEPLOY_HOST`: publiek hostnaam of IP-adres van de Linode.
+- `DEPLOY_USER`: de SSH-beheeruser, normaal `deploy`.
+- `DEPLOY_SSH_KEY`: een aparte private Ed25519-sleutel waarvan de publieke
+   sleutel in `/home/deploy/.ssh/authorized_keys` staat.
+- `DEPLOY_KNOWN_HOSTS`: de gecontroleerde SSH-hostkeyregel voor de server.
+- `DEPLOY_PATH`: optioneel, standaard `/opt/babyly`.
+
+De GitHub-sleutel is alleen voor deploymenttoegang. Productiesecrets zoals
+`.env.production`, `DATABASE_URL`, `SESSION_SECRET` en `RESEND_API_KEY` blijven
+op de server en worden nooit als Actions-secret of artifact gebruikt.
+
+Stel branch protection of een ruleset in voor `main` en vereis de afgeronde
+CI-jobs `quality`, `e2e` en `build`. Laat pull requests van forks nooit
+deploymentsecrets ontvangen. De workflow bewaart Playwright-rapporten maximaal
+zeven dagen en alleen als testoutput.
+
+### Rollback
+
+Automatische rollback is bewust niet ingeschakeld. Noteer vóór elke productie-
+goedkeuring de vorige bekende goede commit-SHA. Bij een regressie log je in als
+`deploy`, controleer je de oorzaak en zet je `/opt/babyly` handmatig terug naar
+die SHA, waarna je vanuit `/opt/babyly/web` `docker compose up -d --build`
+uitvoert. Controleer daarna opnieuw HTTPS en de relevante gebruikersflow.

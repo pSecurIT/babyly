@@ -51,10 +51,9 @@ Beide functionaliteiten zijn onafhankelijk afrondbaar, maar na afronding van een
 ### Regels
 
 1. Een deelnemer mag exact een eerste voorspelling indienen.
-2. Een deelnemer mag maximaal een keer wijzigen.
-3. Na eerste wijziging wordt de voorspelling definitief.
-4. Alle limieten worden server-side afgedwongen met transacties/constraints.
-5. Voorspellingen zijn nooit publiek zichtbaar.
+2. Een deelnemer mag zijn voorspelling onbeperkt vaak wijzigen.
+3. Alle limieten worden server-side afgedwongen met transacties/constraints.
+4. Voorspellingen zijn nooit publiek zichtbaar.
 
 ---
 
@@ -174,10 +173,8 @@ Gebruik een eenvoudige relationele database met foreign keys, indexes en unique 
 4. weight_grams
 5. height_cm
 6. predicted_birth_at
-7. edit_count
-8. locked_at
-9. created_at
-10. updated_at
+7. created_at
+8. updated_at
 
 ### AddressCard
 
@@ -289,15 +286,14 @@ Wanneer komt onze kleine spruit?
 4. Verlopen magic link.
 5. Hergebruik van magic link blokkeren.
 6. Eerste voorspelling indienen.
-7. Eerste wijziging toestaan.
-8. Tweede wijziging blokkeren (ook via directe API-call).
-9. Ongeautoriseerde toegang tot voorspellingen blokkeren.
-10. Ongeautoriseerde admin API-requests blokkeren.
-11. Inputvalidatie voor alle formulieren.
-12. CSRF/session-beveiliging waar van toepassing.
-13. Feature A afronden zonder Feature B.
-14. Feature B afronden zonder Feature A.
-15. Cross-prompt verschijnt na afronding en is niet-blokkerend.
+7. Voorspelling wijzigen (onbeperkt).
+8. Ongeautoriseerde toegang tot voorspellingen blokkeren.
+9. Ongeautoriseerde admin API-requests blokkeren.
+10. Inputvalidatie voor alle formulieren.
+11. CSRF/session-beveiliging waar van toepassing.
+12. Feature A afronden zonder Feature B.
+13. Feature B afronden zonder Feature A.
+14. Cross-prompt verschijnt na afronding en is niet-blokkerend.
 
 ---
 
@@ -308,7 +304,7 @@ Wanneer komt onze kleine spruit?
 3. Na afronding van een flow wordt de andere flow voorgesteld zonder verplichting.
 4. Voorspellingen en adressen zijn nooit publiek zichtbaar.
 5. Admin is alleen toegankelijk voor 2 allowlisted ouder-e-mails via magic link.
-6. Een voorspelling kan slechts een keer worden aangepast.
+6. Een voorspelling kan onbeperkt vaak worden aangepast.
 7. Er is een admin-optie om alle deelnemergegevens handmatig te purgen.
 8. Geen tracking/advertising cookies.
 

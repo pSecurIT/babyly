@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readAdminSession } from "@/lib/session";
-import { purgeAllAction } from "@/app/admin/actions";
 import { getCsrfToken } from "@/lib/csrf";
 import { BackButton } from "@/components/BackButton";
 
@@ -10,7 +9,6 @@ export default async function AdminAddressesPage() {
   if (!session) {
     redirect("/admin/login");
   }
-  const csrfToken = await getCsrfToken();
 
   const addresses = await prisma.addressCard.findMany({
     include: { participant: { select: { name: true, email: true } } },
@@ -40,15 +38,6 @@ export default async function AdminAddressesPage() {
           <a href="/api/admin/export" className="baby-button-secondary px-4 py-2 text-sm">
             ⬇️ CSV-export
           </a>
-          <form action={purgeAllAction}>
-            <input type="hidden" name="csrfToken" value={csrfToken} />
-            <button
-              type="submit"
-              className="rounded-full border border-[#e2a4a4] bg-[#fdeeee] px-4 py-2 text-sm font-bold text-[#7a2b2b]"
-            >
-              🗑️ Alles purgen
-            </button>
-          </form>
         </div>
 
         <div className="mt-8 overflow-x-auto">

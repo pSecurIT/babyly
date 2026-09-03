@@ -7,11 +7,11 @@ const { mockPrisma, mockReadAdminSession, mockReadGuestSession } = vi.hoisted(()
   mockPrisma: {
     participant: { count: vi.fn(), findUnique: vi.fn() },
     prediction: { count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
-    addressCard: { findMany: vi.fn() },
+    addressCard: { findMany: vi.fn(), findUnique: vi.fn() },
   },
   mockReadAdminSession: vi.fn(),
   mockReadGuestSession: vi.fn(),
-}));
+}))
 
 vi.mock("@/lib/csrf", () => ({
   getCsrfToken: vi.fn().mockResolvedValue("page-csrf-token"),
@@ -75,10 +75,17 @@ async function renderPages() {
   const adminLogin = renderToStaticMarkup(await AdminLoginPage({ searchParams: Promise.resolve({}) }));
 
   mockReadGuestSession.mockResolvedValue(guestSession);
-  mockPrisma.participant.findUnique.mockResolvedValue({ name: "Emma" });
-  mockPrisma.prediction.findUnique.mockResolvedValue({ predictedName: "Emma" });
+    mockPrisma.participant.findUnique.mockResolvedValue({ name: "Emma" });
+    mockPrisma.prediction.findUnique.mockResolvedValue({ 
+      predictedName: "Emma",
+      gender: "girl",
+      weightGrams: 3500,
+      heightCm: 52,
+      predictedBirthAt: new Date("2026-09-15T21:10:00Z"),
+    });
   const prediction = renderToStaticMarkup(await PredictionFormPage({ searchParams: Promise.resolve({}) }));
-  const address = renderToStaticMarkup(await AddressFormPage({ searchParams: Promise.resolve({}) }));
+    mockPrisma.addressCard.findUnique.mockResolvedValue(null);
+    const address = renderToStaticMarkup(await AddressFormPage({ searchParams: Promise.resolve({}) }));
 
   mockReadAdminSession.mockResolvedValue(adminSession);
   mockPrisma.participant.count.mockResolvedValue(0);
@@ -121,13 +128,13 @@ describe("CSRF-dekking van paginaformulieren", () => {
   it("voegt aan elk muterend formulier een server-token toe", async () => {
     const pages = await renderPages();
     const expectedFormCounts = {
-      home: 1,
-      adminLogin: 1,
-      prediction: 1,
-      address: 1,
-      admin: 3,
-      adminAddresses: 1,
-    };
+          home: 1,
+          adminLogin: 1,
+          prediction: 1,
+          address: 1,
+          admin: 3,
+          adminAddresses: 0,
+        };
 
     for (const [page, html] of Object.entries(pages)) {
       expect(csrfFormCount(html), `${page} CSRF-form count`).toBe(expectedFormCounts[page as keyof typeof expectedFormCounts]);

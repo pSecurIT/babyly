@@ -42,7 +42,7 @@ export async function submitPredictionAction(formData: FormData) {
 
   const weightGrams = Math.round(parsed.data.weightKg * 1000);
 
-  const result = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
     const existing = await tx.prediction.findUnique({
       where: { participantId: session.sub },
     });

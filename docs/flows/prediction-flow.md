@@ -1,35 +1,65 @@
 # Feature A Flow: Voorspelling
 
 ## Doel
-Gebruiker vult veilige babyvoorspelling in en mag maximaal eenmaal wijzigen.
+Geverifieerde deelnemer vult veilige babyvoorspelling in. Onbeperkt wijzigen mogelijk tot deadline.
 
 ## Stappen
-1. Gebruiker opent de publieke landingspagina en voert eerst de toegangscode en e-mail in.
-2. Backend verstuurt magic link en toont generieke bevestiging.
-3. Gebruiker verifieert via de link en komt terug op de landingspagina, nu als kiezer tussen voorspelling en adres.
-4. Gebruiker kiest voorspelling.
-5. Gebruiker vult voorspelformulier in.
-	De gegokte naam is de voorspelde babynaam en staat los van de naam van de
-	deelnemer die bij de magic-linkaanvraag is ingevuld.
-6. Backend valideert en slaat op.
-7. Gebruiker ziet bevestiging en melding: nog één wijziging mogelijk.
-8. Eventuele wijziging verhoogt edit_count naar 1 en zet record definitief.
-9. Na afronding wordt cross-prompt naar adresflow getoond (overslaan toegestaan).
 
-## Server-side regels
-1. Max 1 initiële prediction per participant.
-2. Max 1 edit.
-3. Alle checks transactioneel uitvoeren.
+1. **Landing** (`/`): toegangscode + naam + e-mail invoeren
+2. **Magic link aanvragen** (POST `/api/auth/request-link`):
+   - CSRF check (middleware cookie + form token)
+   - Rate limit: `code:{ip}` (15/10min), `mail:{ip}` (10/10min)
+   - Access code hash vergelijking
+   - Participant upsert (email unique, name update)
+   - Magic link token genereren (32 bytes random) → SHA-256 hash opslaan
+   - E-mail versturen via Resend/console met verify URL
+3. **Verificatie** (GET `/api/auth/verify?token=...&email=...&scope=guest`):
+   - Token hash lookup + expiry check + `usedAt` null check
+   - Atomische `usedAt` update (single-use)
+   - Participant `emailVerifiedAt` zetten
+   - Signed `baby_session` cookie (scope=guest, 24h)
+   - Redirect naar `/` (nu met sessie)
+4. **Keuzepagina** (`/` met sessie): toont "Mijn voorspelling invullen" + "Mijn adres achterhalen"
+5. **Voorspelformulier** (`/deelnemen/voorspelling/formulier`):
+   - Server Component: laadt bestaande prediction (indien) voor defaults
+   - CSRF token in hidden input
+   - Velden: gegokte naam, geslacht, gewicht (kg), lengte (cm), geboortedatum, tijdstip
+6. **Submit** (Server Action `submitPredictionAction`):
+   - Sessie check (`readGuestSession`)
+   - CSRF validatie
+   - Zod validatie (`predictionInputSchema`)
+   - Deadline check (`PREDICTION_DEADLINE_DATE`)
+   - Transactie:
+     - Geen prediction? → `create`
+     - Bestaat? → `update`
+   - `markCrossPromptSeen("predictionToAddress")` in sessie
+   - Redirect `/deelnemen/voorspelling/bedankt`
+7. **Bedankpagina** (`/deelnemen/voorspelling/bedankt`):
+   - Toont bevestiging + deadline herinnering
+   - Knop "Voorspelling wijzigen" (als deadline nog niet passed)
+   - Knop "Mijn adres toevoegen" → cross-prompt naar Feature B
+
+## Server-side Regels
+1. Max 1 prediction per participant (unique FK constraint)
+2. Onbeperkt wijzigen mogelijk tot deadline
+3. Alle checks transactioneel (Prisma `$transaction`)
+4. Deadline server-side afgedwongen
+5. Geen publieke inzage in voorspellingen
 
 ## Foutgevallen
-1. Ongeldige toegangscode: generieke fout.
-2. Verlopen of gebruikte magic link: afwijzen, optie nieuwe link.
-3. Tweede editpoging: blokkeren met duidelijke melding.
+| Fout | Response |
+|------|----------|
+| Ongeldige toegangscode | Generieke redirect `/?mail=1` (geen detail) |
+| Rate limit | Generieke redirect `/?mail=1` |
+| Verlopen/gebruikte magic link | `/?auth=failed` |
+| Ongeldige CSRF | Redirect formulier `?error=ongeldig` |
+| Validatiefout | Redirect formulier `?error=validatie` |
+| Ongeldige datum/tijd | Redirect formulier `?error=datumtijd` |
+| Deadline passed | Formulier getoond met waarschuwing, submit geblokkeerd |
 
 ## Implementatiedetails
-
-1. Voorspelformulieren bevatten een servergegenereerd CSRF-token.
-2. De server koppelt de prediction uitsluitend aan de geverifieerde
-	participant-sessie en valideert alle velden opnieuw.
-3. Na opslag toont de bedankpagina de optionele adres-cross-prompt; de
-	ondertekende sessie voorkomt herhaling binnen dezelfde sessie.
+- Formulier: Server Component met `defaultValue` uit bestaande prediction
+- CSRF: `getCsrfToken()` via middleware header/cookie
+- Validatie: `predictionInputSchema` (Zod) + `toPredictedBirthAt` helper
+- Cross-prompt: `markCrossPromptSeen` zet flag in sessie cookie
+- Bedankpagina: checkt `isDeadlinePassed` voor wijzig-knop

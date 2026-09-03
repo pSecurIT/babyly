@@ -9,20 +9,66 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: web
+
+    env:
+      DATABASE_URL: postgresql://babyly:babyly@localhost:5432/babyly_ci?schema=public
+      APP_BASE_URL: http://127.0.0.1:3000
+      ACCESS_CODE: ci-only-access-code
+      SESSION_SECRET: ci-only-session-secret-please-use-32-chars
+      MAGIC_LINK_TTL_MINUTES: 15
+      EMAIL_DELIVERY_MODE: console
+      ADMIN_EMAILS: admin@example.invalid,admin2@example.invalid
+      PRIVACY_CONTACT_EMAIL: privacy@example.invalid
+      PREDICTION_DEADLINE_DATE: 2026-12-20T23:59:59Z
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Run unit and security tests
+        run: npm test
+
+  e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: babyly_e2e
+          POSTGRES_DB: babyly_ci
           POSTGRES_USER: babyly
           POSTGRES_PASSWORD: babyly
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U babyly -d babyly_e2e"
+          --health-cmd "pg_isready -U babyly -d babyly_ci"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -32,7 +78,7 @@ jobs:
         working-directory: web
 
     env:
-      DATABASE_URL: postgresql://babyly:babyly@localhost:5432/babyly_e2e?schema=public
+      DATABASE_URL: postgresql://babyly:babyly@localhost:5432/babyly_ci?schema=public
       APP_BASE_URL: http://127.0.0.1:3000
       ACCESS_CODE: ci-only-access-code
       SESSION_SECRET: ci-only-session-secret-please-use-32-chars
@@ -40,6 +86,7 @@ jobs:
       EMAIL_DELIVERY_MODE: console
       ADMIN_EMAILS: admin@example.invalid,admin2@example.invalid
       PRIVACY_CONTACT_EMAIL: privacy@example.invalid
+      PREDICTION_DEADLINE_DATE: 2026-12-20T23:59:59Z
       E2E_RUN_FULL: "1"
       NODE_ENV: development
 
@@ -57,11 +104,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Prepare isolated database
-        run: npx prisma db push --accept-data-loss
-
       - name: Generate Prisma client
         run: npx prisma generate
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
@@ -71,3 +118,54 @@ jobs:
 
       - name: Run full browser E2E tests
         run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            web/playwright-report
+            web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: web
+
+    env:
+      DATABASE_URL: postgresql://babyly:babyly@localhost:5432/babyly_ci?schema=public
+      APP_BASE_URL: http://127.0.0.1:3000
+      ACCESS_CODE: ci-only-access-code
+      SESSION_SECRET: ci-only-session-secret-please-use-32-chars
+      MAGIC_LINK_TTL_MINUTES: 15
+      EMAIL_DELIVERY_MODE: console
+      ADMIN_EMAILS: admin@example.invalid,admin2@example.invalid
+      PRIVACY_CONTACT_EMAIL: privacy@example.invalid
+      PREDICTION_DEADLINE_DATE: 2026-12-20T23:59:59Z
+      NODE_ENV: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js application
+        run: npm run build
+
+      - name: Build production Docker image
+        run: docker build --tag babyly-ci:${{ github.sha }} -f Dockerfile .

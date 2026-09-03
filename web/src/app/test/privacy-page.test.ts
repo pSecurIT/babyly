@@ -12,7 +12,7 @@ describe("privacy-pagina", () => {
     const html = renderToStaticMarkup(PrivacyPage());
 
     expect(html).toContain("Privacy bij Babyly");
-    expect(html).toContain("Vorige pagina");
+    expect(html).toContain("Terug naar keuzemenu");
     expect(html).toContain("privacy@example.com");
     expect(html).toContain("alle gekoppelde voorspellingen en adresgegevens");
     expect(html).toContain("niet gebruikt voor advertenties, tracking");

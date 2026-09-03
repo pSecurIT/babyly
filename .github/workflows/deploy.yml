@@ -1,0 +1,83 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+      SMOKE_URL: https://baby.example.invalid
+
+    steps:
+      - name: Configure SSH key
+        shell: bash
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$RUNNER_TEMP/babyly-ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/babyly-ssh/id_ed25519"
+          chmod 600 "$RUNNER_TEMP/babyly-ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/babyly-ssh/known_hosts"
+          chmod 644 "$RUNNER_TEMP/babyly-ssh/known_hosts"
+
+      - name: Deploy exact tested commit
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/opt/babyly' }}
+        run: |
+          set -euo pipefail
+          ssh \
+            -i "$RUNNER_TEMP/babyly-ssh/id_ed25519" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/babyly-ssh/known_hosts" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+          git fetch --prune origin "$DEPLOY_SHA"
+          git checkout --detach "$DEPLOY_SHA"
+          git cat-file -e "$DEPLOY_SHA^{commit}"
+          cd web
+          docker compose run --build --rm --user root app \
+            node_modules/.bin/prisma migrate deploy \
+            --schema=/app/prisma/schema.prisma
+          docker compose up -d --build
+          REMOTE
+
+      - name: Smoke test production HTTPS endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            --retry 10 --retry-delay 3 --retry-connrefused \
+            --max-time 15 "$SMOKE_URL" > "$RUNNER_TEMP/babyly-smoke.html"
+          grep -Fq '<html' "$RUNNER_TEMP/babyly-smoke.html"
+
+      - name: Remove temporary SSH material
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/babyly-ssh"

@@ -5,7 +5,7 @@ We bouwen een eenvoudige Nederlandstalige website met twee functioneel losse ond
 **Steps**
 1. Scope en requirements vastzetten in Instructions.md met expliciete scheiding tussen Feature A en B, plus cross-prompting regels en acceptance criteria.  
    Afhankelijkheid: geen.
-2. Datamodel en auth-model ontwerpen (participant, prediction, address, magic token, admin allowlist) inclusief server-side limieten/constraints voor one-submit + one-edit.  
+2. Datamodel en auth-model ontwerpen (participant, prediction, address, magic token, admin allowlist) inclusief server-side limieten/constraints.  
    Afhankelijkheid: stap 1.
 3. Security ontwerp uitwerken met trust boundaries en controls: rate limiting, token hashing + expiry + single-use, CSRF, sessiecookies, logging redaction, generieke foutmeldingen.  
    Afhankelijkheid: stap 2.
@@ -25,7 +25,7 @@ We bouwen een eenvoudige Nederlandstalige website met twee functioneel losse ond
 - docs/architecture.md (nieuw) — trust boundaries, componenten, sessie- en auth-sequenties.
 - docs/data-model.md (nieuw) — tabellen, constraints, indexen, bewaarbeleid per tabel.
 - docs/security-controls.md (nieuw) — securitymaatregelen en misbruikpreventie.
-- docs/flows/prediction-flow.md (nieuw) — end-to-end flow A inclusief one-edit regel.
+29|- docs/flows/prediction-flow.md (nieuw) — end-to-end flow A.
 - docs/flows/address-flow.md (nieuw) — end-to-end flow B inclusief validatie en consent.
 - docs/flows/cross-prompting.md (nieuw) — wanneer/wat tonen, frequentie, skip-gedrag.
 - docs/admin.md (nieuw) — admin auth, dashboard, export, delete/reset/purge-acties.
@@ -46,6 +46,7 @@ We bouwen een eenvoudige Nederlandstalige website met twee functioneel losse ond
 - Maximaal één adresregistratie per geverifieerd e-mailadres.
 - Bewaartermijn: handmatige verwijdering via admin-purge functionaliteit.
 - Admin-toegang: exact 2 vaste e-mailadressen op allowlist.
+- Voorspelling kan onbeperkt vaak worden aangepast tot deadline.
 
 **Scope boundaries**
 - In scope: publieke landing, beveiligde deelnemersflows A/B, cross-prompting, admin magic-link, export, delete/reset/purge, privacytekst, security-first architectuur.
