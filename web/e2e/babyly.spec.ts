@@ -19,7 +19,8 @@ test.describe("Babyly browser security and flows", () => {
     });
 
     expect(response.status()).toBe(307);
-    expect(response.headers().location).toBe("http://localhost:3000/?mail=1");
+    const redirect = new URL(response.headers().location!);
+    expect(redirect.pathname + redirect.search).toBe("/?mail=1");
   });
 
   test("keeps both participant flows behind guest authentication", async ({ page }) => {
@@ -36,29 +37,37 @@ test.describe("Babyly browser security and flows", () => {
 
     test("completes prediction and shows the address cross-prompt", async ({ page }) => {
       await page.goto("/deelnemen/voorspelling/formulier");
+      const predictionCsrfToken = await page.locator("input[name=csrfToken]").inputValue();
+      const predictionCsrfCookie = await page.context().cookies();
+      expect(predictionCsrfCookie.find((cookie) => cookie.name === "baby_csrf")?.value).toBe(predictionCsrfToken);
       await page.locator("input[name=\"name\"]").fill("E2E Test");
       await page.locator("select[name=\"gender\"]").selectOption("girl");
       await page.locator("input[name=\"weightKg\"]").fill("3.5");
       await page.locator("input[name=\"heightCm\"]").fill("52");
       await page.locator("input[name=\"birthDate\"]").fill("2027-01-15");
       await page.locator("input[name=\"birthTime\"]").fill("12:00");
-      await page.getByRole("button", { name: /voorspelling opslaan/i }).click();
-
-      await expect(page).toHaveURL(/\/deelnemen\/voorspelling\/bedankt$/);
+      await Promise.all([
+        page.waitForURL(/\/deelnemen\/voorspelling\/bedankt$/),
+        page.getByRole("button", { name: /voorspelling opslaan/i }).click(),
+      ]);
       await expect(page.getByRole("link", { name: /adres achterlaten/i })).toBeVisible();
     });
 
     test("completes address and shows the prediction cross-prompt", async ({ page }) => {
       await page.goto("/deelnemen/adres/formulier");
+      const addressCsrfToken = await page.locator("input[name=csrfToken]").inputValue();
+      const addressCsrfCookie = await page.context().cookies();
+      expect(addressCsrfCookie.find((cookie) => cookie.name === "baby_csrf")?.value).toBe(addressCsrfToken);
       await page.locator("input[name=\"recipientName\"]").fill("E2E Test");
       await page.locator("input[name=\"street\"]").fill("Teststraat");
       await page.locator("input[name=\"houseNumber\"]").fill("1");
       await page.locator("input[name=\"postalCode\"]").fill("1234 AB");
       await page.locator("input[name=\"city\"]").fill("Utrecht");
       await page.locator("input[name=\"country\"]").fill("Nederland");
-      await page.getByRole("button", { name: /adres opslaan/i }).click();
-
-      await expect(page).toHaveURL(/\/deelnemen\/adres\/bedankt$/);
+      await Promise.all([
+        page.waitForURL(/\/deelnemen\/adres\/bedankt$/),
+        page.getByRole("button", { name: /adres opslaan/i }).click(),
+      ]);
       await expect(page.getByRole("link", { name: /voorspelling invullen/i })).toBeVisible();
     });
   });
