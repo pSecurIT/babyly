@@ -21,9 +21,9 @@ alleen read-only toegang tot de repository waaraan hij is toegevoegd.
    niet bekend is, vanaf internet tijdens deze eerste test.
 3. Test SSH vanaf Windows PowerShell:
 
-```powershell
-ssh root@<linode-ip>
-```
+   ```powershell
+   ssh root@<linode-ip>
+   ```
 
 4. Voer op de Debian-server een tijdelijke HTTP-test uit. Deze test raakt de
    applicatie en database niet.
