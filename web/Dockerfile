@@ -9,6 +9,18 @@ FROM node:22-bookworm AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Build-time defaults only; production values are injected by Compose at runtime.
+ENV NODE_ENV=production \
+  ENVIRONMENT_NAME=baby-docker-build \
+  DATABASE_URL=postgresql://babyly:build-only@localhost:5432/babyly_build \
+  APP_BASE_URL=https://baby.example.invalid \
+  ACCESS_CODE=build-only-access-code \
+  SESSION_SECRET=build-only-session-secret-with-at-least-32-characters \
+  EMAIL_DELIVERY_MODE=console \
+  PRIVACY_CONTACT_EMAIL=privacy@example.invalid \
+  PREDICTION_DEADLINE_DATE=2026-12-20T23:59:59Z
+
 RUN npx prisma generate
 RUN npm run build
 

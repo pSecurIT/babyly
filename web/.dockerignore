@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+!.env.production.example
+deploy/caddy.env
+node_modules
+.next
+coverage
+test-results
+e2e/.auth
+.git
+*.log
