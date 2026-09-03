@@ -6,8 +6,6 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-import { adminEmailSet } from "@/lib/env";
-
 describe("adminEmailSet", () => {
   it("parsed komma-gescheiden emails met trim en lowercase", () => {
     // Test the internal logic directly

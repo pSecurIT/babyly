@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { generateRandomToken, sha256Hex, hmacSha256Hex, safeEqualHex } from "@/lib/security";
 
 describe("security.ts - crypto utilities", () => {

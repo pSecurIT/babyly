@@ -71,7 +71,6 @@ describe("session.ts - Session management", () => {
     });
 
     it("returns null for invalid scope", () => {
-          const sessionValue = createSessionValue("test", "guest", 3600);
           // Create a session with invalid scope by tampering the payload
           const invalidSession = "eyJzdWIiOiJ0ZXN0Iiwic2NvcGUiOiJpbnZhbGlkIiwiZXhwIjo5OTk5OTk5OTk5fQ==.invalidsig";
           const parsed = parseSessionValue(invalidSession);

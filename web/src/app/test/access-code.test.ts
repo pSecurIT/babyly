@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { prisma } from "@/lib/db";
 import { syncAccessCodeFromEnv, isValidAccessCode } from "@/lib/access-code";
-import { getEnv } from "@/lib/env";
 import { sha256Hex } from "@/lib/security";
 
 const mockPrisma = vi.hoisted(() => ({

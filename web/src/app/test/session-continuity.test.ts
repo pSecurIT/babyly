@@ -88,9 +88,9 @@ describe("hergebruik van een bestaande sessie tussen beide flows", () => {
     await AddressFormPage({ searchParams: Promise.resolve({}) });
 
     expect(mockReadGuestSession).toHaveBeenCalledTimes(2);
-    mockReadGuestSession.mock.results.forEach((result) => {
-      expect(result.value).resolves.toEqual(activeSession);
-    });
+    for (const result of mockReadGuestSession.mock.results) {
+      await expect(result.value).resolves.toEqual(activeSession);
+    }
   });
 
   it("stuurt alleen door naar de toegangspoort wanneer er geen sessie is", async () => {
