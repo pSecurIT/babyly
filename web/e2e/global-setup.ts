@@ -1,5 +1,6 @@
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { randomBytes } from "node:crypto";
 import type { FullConfig } from "@playwright/test";
 
 const authDirectory = join(process.cwd(), "e2e", ".auth");
@@ -17,6 +18,7 @@ export default async function globalSetup(config: FullConfig) {
 
   const baseURL = config.projects[0]?.use.baseURL ?? "http://localhost:3000";
   const hostname = new URL(baseURL).hostname;
+  const csrfToken = randomBytes(32).toString("hex");
   const email = `e2e-${Date.now()}-${crypto.randomUUID()}@example.invalid`;
   const participant = await prisma.participant.create({
     data: {
@@ -38,6 +40,15 @@ export default async function globalSetup(config: FullConfig) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "Lax",
         expires: Math.floor(Date.now() / 1000) + 60 * 60,
+      }, {
+        name: "baby_csrf",
+        value: csrfToken,
+        domain: hostname,
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        expires: Math.floor(Date.now() / 1000) + 60 * 60 * 8,
       }],
       origins: [],
     }, null, 2));
