@@ -38,7 +38,7 @@ test.describe("Babyly browser security and flows", () => {
     test("completes prediction and shows the address cross-prompt", async ({ page }) => {
       await page.goto("/deelnemen/voorspelling/formulier");
       const predictionCsrfToken = await page.locator("input[name=csrfToken]").inputValue();
-      const predictionCsrfCookie = await page.context().cookies();
+      const predictionCsrfCookie = await page.context().cookies(page.url());
       expect(predictionCsrfCookie.find((cookie) => cookie.name === "baby_csrf")?.value).toBe(predictionCsrfToken);
       await page.locator("input[name=\"name\"]").fill("E2E Test");
       await page.locator("select[name=\"gender\"]").selectOption("girl");
@@ -56,7 +56,7 @@ test.describe("Babyly browser security and flows", () => {
     test("completes address and shows the prediction cross-prompt", async ({ page }) => {
       await page.goto("/deelnemen/adres/formulier");
       const addressCsrfToken = await page.locator("input[name=csrfToken]").inputValue();
-      const addressCsrfCookie = await page.context().cookies();
+      const addressCsrfCookie = await page.context().cookies(page.url());
       expect(addressCsrfCookie.find((cookie) => cookie.name === "baby_csrf")?.value).toBe(addressCsrfToken);
       await page.locator("input[name=\"recipientName\"]").fill("E2E Test");
       await page.locator("input[name=\"street\"]").fill("Teststraat");
