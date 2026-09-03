@@ -11,7 +11,7 @@ const { mockPrisma, mockReadAdminSession, mockReadGuestSession } = vi.hoisted(()
   },
   mockReadAdminSession: vi.fn(),
   mockReadGuestSession: vi.fn(),
-}))
+}));
 
 vi.mock("@/lib/csrf", () => ({
   getCsrfToken: vi.fn().mockResolvedValue("page-csrf-token"),
@@ -128,17 +128,18 @@ describe("CSRF-dekking van paginaformulieren", () => {
   it("voegt aan elk muterend formulier een server-token toe", async () => {
     const pages = await renderPages();
     const expectedFormCounts = {
-          home: 1,
-          adminLogin: 1,
-          prediction: 1,
-          address: 1,
-          admin: 3,
-          adminAddresses: 0,
-        };
+      home: 1,
+      adminLogin: 1,
+      prediction: 1,
+      address: 1,
+      admin: 3,
+      adminAddresses: 0,
+    };
 
     for (const [page, html] of Object.entries(pages)) {
       expect(csrfFormCount(html), `${page} CSRF-form count`).toBe(expectedFormCounts[page as keyof typeof expectedFormCounts]);
-      expect(html.match(/value="page-csrf-token"/g)?.length).toBe(expectedFormCounts[page as keyof typeof expectedFormCounts]);
+      const csrfTokenMatches = html.match(/value="page-csrf-token"/g);
+      expect(csrfTokenMatches?.length ?? 0, `${page} CSRF token count`).toBe(expectedFormCounts[page as keyof typeof expectedFormCounts]);
     }
   });
 });

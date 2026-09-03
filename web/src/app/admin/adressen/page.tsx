@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readAdminSession } from "@/lib/session";
-import { getCsrfToken } from "@/lib/csrf";
 import { BackButton } from "@/components/BackButton";
 
 export default async function AdminAddressesPage() {

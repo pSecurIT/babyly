@@ -35,6 +35,7 @@ yarn-error.log*
 .env*
 !.env.example
 !.env.production.example
+/deploy/caddy.env
 
 # generated AI assistant skill artifacts (not needed for this app)
 .agents/
