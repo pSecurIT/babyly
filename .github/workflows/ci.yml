@@ -148,7 +148,6 @@ jobs:
       ADMIN_EMAILS: admin@example.invalid,admin2@example.invalid
       PRIVACY_CONTACT_EMAIL: privacy@example.invalid
       PREDICTION_DEADLINE_DATE: 2026-12-20T23:59:59Z
-      NODE_ENV: production
 
     steps:
       - name: Checkout
@@ -168,6 +167,8 @@ jobs:
         run: npx prisma generate
 
       - name: Build Next.js application
+        env:
+          NODE_ENV: production
         run: npm run build
 
       - name: Build production Docker image
