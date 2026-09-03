@@ -24,7 +24,7 @@ jobs:
       name: production
     env:
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
-      SMOKE_URL: https://baby.example.invalid
+      SMOKE_URL: ${{ secrets.DEPLOY_SMOKE_URL }}
 
     steps:
       - name: Configure SSH key

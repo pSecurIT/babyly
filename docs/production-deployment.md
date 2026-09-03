@@ -356,6 +356,7 @@ secrets:
    sleutel in `/home/deploy/.ssh/authorized_keys` staat.
 - `DEPLOY_KNOWN_HOSTS`: de gecontroleerde SSH-hostkeyregel voor de server.
 - `DEPLOY_PATH`: optioneel, standaard `/opt/babyly`.
+- `DEPLOY_SMOKE_URL`: de echte HTTPS-URL voor de post-deployment smoke test.
 
 De GitHub-sleutel is alleen voor deploymenttoegang. Productiesecrets zoals
 `.env.production`, `DATABASE_URL`, `SESSION_SECRET` en `RESEND_API_KEY` blijven
