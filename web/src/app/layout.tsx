@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Lora, Nunito } from "next/font/google";
 import "./globals.css";
 import { readAdminSession, readGuestSession } from "@/lib/session";
 import { LogoutButton } from "@/components/LogoutButton";
-import logo from "./logo.svg";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
   const [guestSession, adminSession] = await Promise.all([readGuestSession(), readAdminSession()]);
   const isAuthenticated = Boolean(guestSession || adminSession);
 
@@ -41,7 +41,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 rounded-[28px] bg-[rgba(255,255,255,0.34)] px-4 py-3 shadow-[0_12px_28px_rgba(73,105,82,0.06)] backdrop-blur-xl sm:px-5">
             <Link href="/" aria-label="Ga naar de homepagina" className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#f9faf6_0%,#ebf9ee_52%,#e0f4db_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_8px_18px_rgba(84,157,100,0.08)]">
-                <Image src={logo} alt="Babyly logo" width={28} height={28} priority />
+                <Image src="/logo.svg" alt="Babyly logo" width={28} height={28} priority />
               </div>
               <div className="leading-none">
                 <p className="font-black tracking-[-0.05em] text-[1.65rem] text-[#234a37] sm:text-[1.9rem]">Babyly</p>

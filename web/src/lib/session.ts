@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
-import { getEnv } from "@/lib/env";
-import { hmacSha256Hex } from "@/lib/security";
+import { getEnv } from "./env";
+import { hmacSha256Hex } from "./security";
 
 type SessionScope = "guest" | "admin";
 
