@@ -28,23 +28,23 @@ alleen read-only toegang tot de repository waaraan hij is toegevoegd.
 4. Voer op de Debian-server een tijdelijke HTTP-test uit. Deze test raakt de
    applicatie en database niet.
 
-```bash
-mkdir -p /tmp/babyly-connectivity-test
-printf '<h1>Babyly server is bereikbaar</h1>\n' \
-  > /tmp/babyly-connectivity-test/index.html
-if command -v ufw >/dev/null 2>&1; then
-   ufw allow 8080/tcp comment 'Temporary connectivity test'
-fi
-cd /tmp/babyly-connectivity-test
-nohup python3 -m http.server 8080 --bind 0.0.0.0 \
-  --directory /tmp/babyly-connectivity-test \
-  >/tmp/babyly-connectivity-test.log 2>&1 &
-echo $! > /tmp/babyly-connectivity-test.pid
-```
+   ```bash
+   mkdir -p /tmp/babyly-connectivity-test
+   printf '<h1>Babyly server is bereikbaar</h1>\n' \
+   > /tmp/babyly-connectivity-test/index.html
+   if command -v ufw >/dev/null 2>&1; then
+      ufw allow 8080/tcp comment 'Temporary connectivity test'
+   fi
+   cd /tmp/babyly-connectivity-test
+   nohup python3 -m http.server 8080 --bind 0.0.0.0 \
+   --directory /tmp/babyly-connectivity-test \
+   >/tmp/babyly-connectivity-test.log 2>&1 &
+   echo $! > /tmp/babyly-connectivity-test.pid
+   ```
 
-Als UFW op de nieuwe machine nog niet is geïnstalleerd, sla de `ufw allow`
-regel over en laat alleen tijdelijk TCP 8080 toe in de Linode Cloud Firewall.
-De provisioningstap installeert UFW later en sluit deze tijdelijke poort weer.
+   Als UFW op de nieuwe machine nog niet is geïnstalleerd, sla de `ufw allow`
+   regel over en laat alleen tijdelijk TCP 8080 toe in de Linode Cloud Firewall.
+   De provisioningstap installeert UFW later en sluit deze tijdelijke poort weer.
 
 5. Open thuis `http://<linode-ip>:8080`. Verwacht:
    `Babyly server is bereikbaar`. Als dit niet werkt, controleer ook de
