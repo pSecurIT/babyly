@@ -11,6 +11,7 @@
 - **Database:** PostgreSQL op dezelfde Linode als de app.
 - **Backups:** versleutelde PostgreSQL-dumps naar private S3-compatible Object
 alleen read-only toegang tot de repository waaraan hij is toegevoegd.
+
 ## Server aanmaken en eerste internettest
 
 1. Maak een Linode Shared CPU met 2 GB RAM in Amsterdam en installeer Debian
