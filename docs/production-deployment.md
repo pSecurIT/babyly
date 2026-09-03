@@ -355,6 +355,8 @@ secrets:
 - `DEPLOY_SSH_KEY`: een aparte private Ed25519-sleutel waarvan de publieke
    sleutel in `/home/deploy/.ssh/authorized_keys` staat.
 - `DEPLOY_KNOWN_HOSTS`: de gecontroleerde SSH-hostkeyregel voor de server.
+   Genereer deze met exact dezelfde hostnaam of het IP-adres als in
+   `DEPLOY_HOST`; een key voor het IP-adres matcht niet automatisch een DNS-naam.
 - `DEPLOY_PATH`: optioneel, standaard `/opt/babyly`.
 - `DEPLOY_SMOKE_URL`: de echte HTTPS-URL voor de post-deployment smoke test.
 

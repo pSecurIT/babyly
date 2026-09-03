@@ -32,6 +32,7 @@ jobs:
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           set -euo pipefail
           install -m 700 -d "$RUNNER_TEMP/babyly-ssh"
@@ -39,6 +40,10 @@ jobs:
           chmod 600 "$RUNNER_TEMP/babyly-ssh/id_ed25519"
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/babyly-ssh/known_hosts"
           chmod 644 "$RUNNER_TEMP/babyly-ssh/known_hosts"
+          if ! ssh-keygen -F "$DEPLOY_HOST" -f "$RUNNER_TEMP/babyly-ssh/known_hosts" >/dev/null; then
+            echo "DEPLOY_KNOWN_HOSTS has no host key entry for DEPLOY_HOST. Generate it for the exact configured host or IP." >&2
+            exit 1
+          fi
 
       - name: Deploy exact tested commit
         shell: bash
