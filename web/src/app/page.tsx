@@ -77,7 +77,7 @@ export default async function Home({ searchParams }: HomeProps) {
         </div>
 
         <h1 className="text-4xl font-extrabold tracking-tight text-[#234a37]">
-          Wanneer komt onze kleine spruit?
+          Wanneer denk jij dat onze baby geboren wordt? Of welk geslacht zal het worden?
         </h1>
         <p className="mt-5 text-[#3c594b]">
           Vul de geheime toegangscode en je e-mailadres in. We sturen je een eenmalige link waarmee je

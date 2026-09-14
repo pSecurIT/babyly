@@ -47,12 +47,21 @@ export default async function PredictionFormPage(props: {
         <div className="mb-6 flex items-center gap-3">
           <span className="baby-emoji text-xl" aria-hidden="true">🎈</span>
           <div>
-            <p className="baby-tag text-[0.62rem]">verrassing</p>
+            <p className="baby-tag text-[0.62rem]">voorspelling</p>
           </div>
         </div>
 
         <h1 className="text-3xl font-extrabold text-[#234a37]">Wat denk jij?</h1>
-        <p className="mt-3 text-[#3c594b]">Je kunt je voorspelling aanpassen tot {deadlineDate.toLocaleDateString("nl-NL")}.</p>
+        <div className="mt-3 flex items-center gap-2.5 rounded-2xl border border-[#cfecc7] bg-[#ebf9ee] px-4 py-2.5 text-sm font-medium text-[#244a37]">
+          <span className="text-base" aria-hidden="true">⏳</span>
+          <span>
+            Je kunt je voorspelling aanpassen tot{" "}
+            <strong className="font-extrabold text-[#1d3d2c]">
+              {deadlineDate.toLocaleDateString("nl-NL")}
+            </strong>
+            .
+          </span>
+        </div>
 
         {error === "ongeldig" && (
           <div className="mb-4 rounded-lg bg-red-100 p-4 text-red-800">
@@ -125,9 +134,6 @@ export default async function PredictionFormPage(props: {
         </form>
         )}
 
-        <aside className="mt-8 rounded-2xl border border-[#f4d88b] bg-[#fff8df] p-4 text-[#5f4d1a]">
-          Ook je adres achterlaten voor het geboortekaartje? Dat kan <a className="font-bold underline" href="/deelnemen/adres/formulier">hier</a>
-        </aside>
       </div>
     </main>
   );
