@@ -91,14 +91,6 @@ export default async function AddressFormPage(props: {
           </button>
         </form>
 
-        <aside className="mt-8 rounded-2xl border border-[#f4d88b] bg-[#fff8df] p-4 text-[#5f4d1a]">
-          Ook een voorspelling invullen? Dat kan via de andere flow.
-          <div className="mt-3">
-            <a className="font-bold underline" href="/deelnemen/voorspelling/formulier">
-              Naar voorspelflow
-            </a>
-          </div>
-        </aside>
       </div>
     </main>
   );
