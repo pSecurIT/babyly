@@ -5,9 +5,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 const { mockPrisma, mockReadAdminSession, mockReadGuestSession } = vi.hoisted(() => ({
   mockPrisma: {
-    participant: { count: vi.fn(), findUnique: vi.fn() },
+    participant: { count: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
     prediction: { count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
-    addressCard: { findMany: vi.fn(), findUnique: vi.fn() },
+    addressCard: { findMany: vi.fn(), findUnique: vi.fn(), count: vi.fn() },
   },
   mockReadAdminSession: vi.fn(),
   mockReadGuestSession: vi.fn(),
@@ -35,6 +35,10 @@ vi.mock("@/app/admin/actions", () => ({
   deleteParticipantAction: vi.fn(),
   purgeAllAction: vi.fn(),
   resetPredictionAction: vi.fn(),
+  clearPredictionsAction: vi.fn(),
+  clearAddressesAction: vi.fn(),
+  mailPredictionsCsvAction: vi.fn(),
+  mailAddressesCsvAction: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -46,6 +50,7 @@ vi.mock("next/navigation", () => ({
 import AdminAddressesPage from "@/app/admin/adressen/page";
 import AdminLoginPage from "@/app/admin/login/page";
 import AdminDashboardPage from "@/app/admin/page";
+import AdminPredictionsPage from "@/app/admin/voorspellingen/page";
 import Home from "@/app/page";
 import AddressFormPage from "@/app/deelnemen/adres/formulier/page";
 import PredictionFormPage from "@/app/deelnemen/voorspelling/formulier/page";
@@ -89,22 +94,28 @@ async function renderPages() {
 
   mockReadAdminSession.mockResolvedValue(adminSession);
   mockPrisma.participant.count.mockResolvedValue(0);
+  mockPrisma.participant.findMany.mockResolvedValue([]);
   mockPrisma.prediction.findMany.mockResolvedValue([{
     id: "prediction-1",
     participantId: "participant-1",
+    predictedName: "Emma",
     gender: "girl",
     weightGrams: 3500,
     heightCm: 52,
     predictedBirthAt: new Date("2026-09-15T21:10:00Z"),
+    createdAt: new Date("2026-08-01T10:00:00Z"),
+    updatedAt: new Date("2026-08-01T10:00:00Z"),
     participant: { name: "Emma", email: "emma@example.com" },
   }]);
-  mockPrisma.prediction.count.mockResolvedValue(1);
-  mockPrisma.prediction.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0).mockResolvedValueOnce(1);
   mockPrisma.addressCard.findMany.mockResolvedValue([]);
+  mockPrisma.addressCard.count.mockResolvedValue(0);
   const admin = renderToStaticMarkup(await AdminDashboardPage({ searchParams: Promise.resolve({}) }));
-  const adminAddresses = renderToStaticMarkup(await AdminAddressesPage());
+  const adminPredictions = renderToStaticMarkup(
+    await AdminPredictionsPage({ searchParams: Promise.resolve({}) }),
+  );
+  const adminAddresses = renderToStaticMarkup(await AdminAddressesPage({ searchParams: Promise.resolve({}) }));
 
-  return { home, adminLogin, prediction, address, admin, adminAddresses };
+  return { home, adminLogin, prediction, address, admin, adminPredictions, adminAddresses };
 }
 
 describe("CSRF-dekking van paginaformulieren", () => {
@@ -132,8 +143,9 @@ describe("CSRF-dekking van paginaformulieren", () => {
       adminLogin: 1,
       prediction: 1,
       address: 1,
-      admin: 3,
-      adminAddresses: 0,
+      admin: 1,
+      adminPredictions: 4,
+      adminAddresses: 2,
     };
 
     for (const [page, html] of Object.entries(pages)) {

@@ -52,7 +52,7 @@ export default async function Home({ searchParams }: HomeProps) {
             </div>
 
             <p className="mt-6 text-sm text-[#4f6a5d]">
-              Privacy eerst: gegevens zijn niet publiek zichtbaar en alleen bedoeld voor dit geboortemoment.
+              Privacy eerst: gegevens zijn niet publiek zichtbaar en alleen bedoeld voor de voorspellingen en het geboortekaartje.
             </p>
           </div>
         </section>

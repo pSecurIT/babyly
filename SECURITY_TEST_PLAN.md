@@ -68,7 +68,7 @@
 | **Z1** Access other participant's prediction | Login as user A, try `/deelnemen/voorspelling/formulier` with user B's ID | Only user A's data shown |
 | **Z2** Access other participant's address | Same as Z1 for address | Only user A's data |
 | **Z3** Admin endpoint without auth | GET `/admin` without login | Redirect `/admin/login` |
-| **Z4** Admin API without auth | GET `/api/admin/export` | 401 Unauthorized |
+| **Z4** Admin API without auth | GET `/api/admin/export`, `/api/admin/export/predictions`, `/api/admin/export/addresses` | 401 Unauthorized |
 | **Z5** Admin actions as guest | POST delete/reset/purge with guest session | Redirect `/admin/login` |
 | **Z6** Participant ID tampering | Change `participantId` in admin forms | Server validates admin session only |
 
@@ -106,7 +106,7 @@
 |------|-------|----------|
 | **D1** Public prediction list | Visit `/api/...` or guess URLs | 404 or redirect |
 | **D2** Public address list | Same as D1 | 404 or redirect |
-| **D3** Admin export without auth | Direct GET `/api/admin/export` | 401 |
+| **D3** Admin export without auth | Direct GET `/api/admin/export`, `/api/admin/export/predictions`, `/api/admin/export/addresses` | 401 |
 | **D4** PII in logs | Check server logs after actions | No emails, names, tokens |
 | **D5** CSV export formula injection | Export after XSS payloads | Neutralized (`'=...`) |
 | **D6** Email enumeration | Different emails on login | Identical generic responses |
