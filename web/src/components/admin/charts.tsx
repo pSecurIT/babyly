@@ -34,14 +34,17 @@ export function BarChart({ data, color = "#7ccf73" }: { data: DateBucket[]; colo
   const max = Math.max(1, ...data.map((bucket) => bucket.count));
 
   return (
-    <div className="flex h-32 items-end gap-1">
+    <div className="flex items-end gap-1">
       {data.map((bucket) => (
         <div key={bucket.label} className="flex flex-1 flex-col items-center gap-1">
-          <div
-            className="w-full rounded-t-md"
-            style={{ height: `${Math.max(4, (bucket.count / max) * 100)}%`, background: color }}
-            title={`${bucket.label}: ${bucket.count}`}
-          />
+          {/* Fixed-height track so the bar's percentage height has something definite to resolve against. */}
+          <div className="flex h-28 w-full items-end">
+            <div
+              className="w-full rounded-t-md"
+              style={{ height: `${Math.max(4, (bucket.count / max) * 100)}%`, background: color }}
+              title={`${bucket.label}: ${bucket.count}`}
+            />
+          </div>
           <span className="text-[9px] whitespace-nowrap text-[#4f6a5d]">{bucket.label}</span>
         </div>
       ))}
