@@ -3,9 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 const { mockPrisma, mockReadAdminSession, mockReadGuestSession } = vi.hoisted(() => ({
   mockPrisma: {
-    participant: { count: vi.fn(), findUnique: vi.fn() },
+    participant: { count: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
     prediction: { findMany: vi.fn(), findUnique: vi.fn(), count: vi.fn() },
-    addressCard: { findMany: vi.fn(), findUnique: vi.fn() },
+    addressCard: { findMany: vi.fn(), findUnique: vi.fn(), count: vi.fn() },
   },
   mockReadAdminSession: vi.fn(),
   mockReadGuestSession: vi.fn(),
@@ -93,7 +93,7 @@ describe("IDOR- en ongeautoriseerde leesbeveiliging", () => {
     await expect(AdminDashboardPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
       "redirect:/admin/login",
     );
-    await expect(AdminAddressesPage()).rejects.toThrow("redirect:/admin/login");
+    await expect(AdminAddressesPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/admin/login");
 
     expect(mockPrisma.participant.count).not.toHaveBeenCalled();
     expect(mockPrisma.prediction.findMany).not.toHaveBeenCalled();
@@ -103,12 +103,14 @@ describe("IDOR- en ongeautoriseerde leesbeveiliging", () => {
   it("laat admin-leespagina's alleen na een admin-sessie data lezen", async () => {
     mockReadAdminSession.mockResolvedValue(adminSession);
     mockPrisma.participant.count.mockResolvedValue(0);
+    mockPrisma.participant.findMany.mockResolvedValue([]);
     mockPrisma.prediction.findMany.mockResolvedValue([]);
     mockPrisma.prediction.count.mockResolvedValue(0);
     mockPrisma.addressCard.findMany.mockResolvedValue([]);
+    mockPrisma.addressCard.count.mockResolvedValue(0);
 
     await AdminDashboardPage({ searchParams: Promise.resolve({}) });
-    await AdminAddressesPage();
+    await AdminAddressesPage({ searchParams: Promise.resolve({}) });
 
     expect(mockPrisma.participant.count).toHaveBeenCalledTimes(1);
     expect(mockPrisma.prediction.findMany).toHaveBeenCalledTimes(1);

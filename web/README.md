@@ -38,7 +38,7 @@ Een veilige, eenvoudige en Nederlandse ervaring bieden waar deelnemers:
 ### Vereisten
 - Node.js 22+
 - npm
-- PostgreSQL (via Prisma dev database of lokaal)
+- Docker Desktop (voor de lokale PostgreSQL-container)
 
 ### Setup
 ```powershell
@@ -46,9 +46,9 @@ cd E:\code\Baby\web
 npm install
 ```
 
-Maak `.env` op basis van `.env.example`:
+Maak `.env` op basis van `.env.example`. De standaard `DATABASE_URL` verwijst naar een vaste poort (55432) die door `docker-compose.dev.yml` wordt beheerd, dus die hoef je normaal niet aan te passen:
 ```env
-DATABASE_URL="postgresql://USER:***@HOST:PORT/DATABASE?schema=public"
+DATABASE_URL="postgresql://babyly:babyly-dev@localhost:55432/babyly_dev?schema=public"
 APP_BASE_URL="http://localhost:3000"
 ACCESS_CODE="kies-een-unieke-toegangscode"
 SESSION_SECRET="minimaal-32-willekeurige-tekens"
@@ -64,20 +64,20 @@ PREDICTION_DEADLINE_DATE="2025-12-31"
 cd E:\code\Baby\web
 npm run dev
 ```
+`predev` start (of hergebruikt) de Postgres-container op een vaste poort, wacht tot deze bereikbaar is en synchroniseert het schema — dit werkt altijd hetzelfde, ongeacht eerdere sessies.
 Open: http://localhost:3000
 
-### Prisma Handmatig
+### Postgres Handmatig
 ```powershell
 cd E:\code\Baby\web
-npx prisma dev ls
-npx prisma dev start default
+docker compose -f docker-compose.dev.yml up -d db
 npx prisma db push
 ```
 
 ### Stoppen
 ```powershell
 cd E:\code\Baby\web
-npx prisma dev stop default
+npm run predev:stop
 ```
 
 ## Testen

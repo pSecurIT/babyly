@@ -1,11 +1,17 @@
 import { Resend } from "resend";
-import { getEnv } from "@/lib/env";
+import { adminEmailSet, getEnv } from "@/lib/env";
 import { sha256Hex } from "@/lib/security";
 
 type SendMagicLinkInput = {
   email: string;
   link: string;
   purpose: "guest" | "admin";
+};
+
+type SendCsvEmailInput = {
+  subject: string;
+  filename: string;
+  csv: string;
 };
 
 function escapeHtml(value: string): string {
@@ -134,5 +140,41 @@ export async function sendTestEmail() {
   } catch {
     console.error("[email-test] provider_failed");
     throw new Error("Testmail kon niet worden verstuurd.");
+  }
+}
+
+export async function sendCsvEmail(input: SendCsvEmailInput) {
+  const env = getEnv();
+  const recipients = Array.from(adminEmailSet());
+  if (recipients.length === 0) {
+    throw new Error("Geen admin e-mailadressen geconfigureerd.");
+  }
+
+  if (env.EMAIL_DELIVERY_MODE !== "provider") {
+    console.info(`[csv-email:local] ${input.filename} -> ${recipients.length} ontvanger(s)`);
+    return;
+  }
+
+  const resend = new Resend(env.RESEND_API_KEY);
+  const idempotencyKey = `csv-email/${Date.now()}/${crypto.randomUUID()}`;
+
+  try {
+    const result = await resend.emails.send({
+      from: env.EMAIL_FROM!,
+      to: recipients,
+      subject: input.subject,
+      text: "In de bijlage vind je het gevraagde CSV-bestand.",
+      attachments: [{ filename: input.filename, content: Buffer.from(input.csv, "utf8") }],
+    }, { idempotencyKey });
+
+    if (result.error) {
+      console.error("[email] csv_export_failed");
+      throw new Error("CSV-mail kon niet worden verstuurd.");
+    }
+
+    console.info("[email] csv_export_sent", { messageId: result.data?.id ?? "unknown" });
+  } catch {
+    console.error("[email] csv_export_failed");
+    throw new Error("CSV-mail kon niet worden verstuurd.");
   }
 }

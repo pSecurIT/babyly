@@ -7,8 +7,9 @@
     "mysql2": "^3.24.3"
   },
   "scripts": {
-    "predev": "prisma dev start default && prisma db push",
+    "predev": "docker compose -f docker-compose.dev.yml up -d db && node scripts/wait-for-db.mjs && prisma db push",
     "dev": "next dev",
+    "predev:stop": "docker compose -f docker-compose.dev.yml down",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

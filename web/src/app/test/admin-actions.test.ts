@@ -39,6 +39,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { deleteParticipantAction, purgeAllAction, resetPredictionAction } from "@/app/admin/actions";
+import { CLEAR_ALL_PHRASE } from "@/lib/admin-clear-phrases";
 
 describe("admin acties", () => {
   beforeEach(() => {
@@ -72,7 +73,7 @@ describe("admin acties", () => {
     const formData = new FormData();
     formData.set("participantId", "participant-1");
 
-    await expect(deleteParticipantAction(formData)).rejects.toThrow("/admin?deleted=1");
+    await expect(deleteParticipantAction(formData)).rejects.toThrow("/admin/voorspellingen?deleted=1");
     expect(mockPrisma.participant.delete).toHaveBeenCalledWith({ where: { id: "participant-1" } });
     expect(infoSpy).toHaveBeenCalledWith("[admin-audit] participant_deleted");
     expect(infoSpy.mock.calls.flat().join(" ")).not.toContain("admin@example.com");
@@ -86,16 +87,26 @@ describe("admin acties", () => {
     const formData = new FormData();
     formData.set("participantId", "participant-1");
 
-    await expect(resetPredictionAction(formData)).rejects.toThrow("/admin?reset=1");
+    await expect(resetPredictionAction(formData)).rejects.toThrow("/admin/voorspellingen?reset=1");
     expect(mockPrisma.prediction.deleteMany).toHaveBeenCalledWith({ where: { participantId: "participant-1" } });
   });
 
-  it("purget alle deelnemergegevens in een transactie", async () => {
+  it("purget alle deelnemergegevens in een transactie na juiste bevestiging", async () => {
     mockReadAdminSession.mockResolvedValue({ sub: "admin@example.com", scope: "admin", exp: 9999999999 });
     mockPrisma.$transaction.mockResolvedValue(undefined);
     const formData = new FormData();
+    formData.set("confirm", CLEAR_ALL_PHRASE);
 
     await expect(purgeAllAction(formData)).rejects.toThrow("/admin?purged=1");
     expect(mockPrisma.$transaction).toHaveBeenCalled();
+  });
+
+  it("weigert het purgen van alle gegevens zonder juiste bevestigingszin", async () => {
+    mockReadAdminSession.mockResolvedValue({ sub: "admin@example.com", scope: "admin", exp: 9999999999 });
+    const formData = new FormData();
+    formData.set("confirm", "verkeerde tekst");
+
+    await expect(purgeAllAction(formData)).rejects.toThrow("/admin?error=bevestiging");
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 });

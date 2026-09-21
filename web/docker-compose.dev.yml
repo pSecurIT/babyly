@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: babyly
+      POSTGRES_PASSWORD: babyly-dev
+      POSTGRES_DB: babyly_dev
+    ports:
+      # Fixed host port so DATABASE_URL never has to change between restarts/reboots.
+      - "55432:5432"
+    volumes:
+      - babyly_dev_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U babyly -d babyly_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  babyly_dev_pgdata:
