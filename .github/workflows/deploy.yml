@@ -18,7 +18,7 @@ jobs:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     environment:
       name: production
@@ -36,9 +36,13 @@ jobs:
         run: |
           set -euo pipefail
           install -m 700 -d "$RUNNER_TEMP/babyly-ssh"
-          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/babyly-ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > "$RUNNER_TEMP/babyly-ssh/id_ed25519"
           chmod 600 "$RUNNER_TEMP/babyly-ssh/id_ed25519"
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/babyly-ssh/known_hosts"
+          if ! ssh-keygen -y -f "$RUNNER_TEMP/babyly-ssh/id_ed25519" >/dev/null; then
+            echo "DEPLOY_SSH_KEY is not a valid unencrypted private key (check the full PEM/OpenSSH block incl. BEGIN/END lines)." >&2
+            exit 1
+          fi
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" | tr -d '\r' > "$RUNNER_TEMP/babyly-ssh/known_hosts"
           chmod 644 "$RUNNER_TEMP/babyly-ssh/known_hosts"
           if ! ssh-keygen -F "$DEPLOY_HOST" -f "$RUNNER_TEMP/babyly-ssh/known_hosts" >/dev/null; then
             echo "DEPLOY_KNOWN_HOSTS has no host key entry for DEPLOY_HOST. Generate it for the exact configured host or IP." >&2
@@ -59,6 +63,7 @@ jobs:
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$RUNNER_TEMP/babyly-ssh/known_hosts" \
+            -o ConnectTimeout=20 \
             -o ServerAliveInterval=60 \
             -o ServerAliveCountMax=5 \
             "$DEPLOY_USER@$DEPLOY_HOST" \
