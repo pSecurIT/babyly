@@ -39,12 +39,24 @@ Kolommen: Deelnemer naam, E-mail, Gegokte naam, Geslacht, Gewicht (kg), Lengte (
 
 ## Tabblad Adressen (`/admin/adressen`, `src/app/admin/adressen/page.tsx`)
 ### Tabel: Adressen Overzicht
-Kolommen: Naam ontvanger, Adres, Postcode, Woonplaats, Land, Deelnemer, Ingevuld op
+Kolommen: Naam ontvanger, Adres, Postcode, Woonplaats, Land, Deelnemer, Ingevuld op, Acties
+
+### Acties per rij
+- **Reset**: `resetAddressAction` → verwijdert alleen het adres → deelnemer kan opnieuw invullen
+- **Verwijder**: `deleteAddressParticipantAction` → cascade delete participant + prediction + address + tokens
 
 ### Bulk acties
 - **CSV Export**: `GET /api/admin/export/addresses` → zelfde beveiligingsheaders als hierboven
 - **Mail CSV naar admins**: `mailAddressesCsvAction` → verstuurt CSV als bijlage naar alle adressen in `ADMIN_EMAILS`
 - **Adressen wissen**: `clearAddressesAction` → `prisma.addressCard.deleteMany({})`; vereist getypte bevestigingszin `VERWIJDER ADRESSEN`. Deelnemers en voorspellingen blijven bestaan.
+
+## Tabblad E-mail (`/admin/email`, `src/app/admin/email/page.tsx`)
+Lijst van deelnemers met voorspelling maar zonder adres (`findReminderTargets` in `src/lib/reminders.ts`).
+- **Herinner (per rij)**: `sendAddressReminderAction`
+- **Herinner iedereen**: `sendAllAddressRemindersAction` (checkbox-bevestiging, sequentieel, telt verzonden/overgeslagen/mislukt)
+- Elke mail bevat een persoonlijke magic link (7 dagen geldig, eenmalig) naar `/deelnemen/adres/formulier`.
+- Adres en cooldown (max. 1 herinnering per 7 dagen, `Participant.reminderSentAt`) worden vlak voor verzending opnieuw gecontroleerd.
+- Rate limiting per admin; auditlog zonder PII.
 
 ## Beheeracties (Server Actions, `src/app/admin/actions.ts`)
 
@@ -52,11 +64,15 @@ Kolommen: Naam ontvanger, Adres, Postcode, Woonplaats, Land, Deelnemer, Ingevuld
 |-------|---------|-----------|
 | `deleteParticipantAction` | `prisma.participant.delete({ where: { id } })` | Admin sessie + CSRF + participantId |
 | `resetPredictionAction` | `prisma.prediction.deleteMany({ where: { participantId } })` | Admin sessie + CSRF + participantId |
+| `resetAddressAction` | `prisma.addressCard.deleteMany({ where: { participantId } })` | Admin sessie + CSRF + participantId |
+| `deleteAddressParticipantAction` | `prisma.participant.delete({ where: { id } })`, redirect naar `/admin/adressen` | Admin sessie + CSRF + participantId |
 | `purgeAllAction` | Transaction: delete all magicLinkTokens + participants | Admin sessie + CSRF + bevestigingszin |
 | `clearPredictionsAction` | `prisma.prediction.deleteMany({})` | Admin sessie + CSRF + bevestigingszin |
 | `clearAddressesAction` | `prisma.addressCard.deleteMany({})` | Admin sessie + CSRF + bevestigingszin |
 | `mailPredictionsCsvAction` | Bouwt CSV + `sendCsvEmail` naar `adminEmailSet()` | Admin sessie + CSRF |
 | `mailAddressesCsvAction` | Bouwt CSV + `sendCsvEmail` naar `adminEmailSet()` | Admin sessie + CSRF |
+| `sendAddressReminderAction` | `sendReminderTo(participantId)`: magic link (7 dgn) + `sendAddressReminder` | Admin sessie + CSRF + rate limit + adres/cooldown hercheck |
+| `sendAllAddressRemindersAction` | Loopt sequentieel over `findReminderTargets()` | Admin sessie + CSRF + bevestiging + rate limit |
 
 ## Veiligheidsregels
 1. **Alle admin routes**: `readAdminSession()` check vóór elke actie

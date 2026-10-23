@@ -30,6 +30,7 @@ export default function PrivacyPage() {
         <section className="mt-8 space-y-3 text-[#3c594b]">
           <h2 className="text-xl font-extrabold text-[#234a37]">Waarom gebruiken we deze gegevens?</h2>
           <p>We gebruiken ze uitsluitend om de babyvoorspelling te beheren en een geboortekaartje te kunnen versturen.</p>
+          <p>Als je een voorspelling hebt gedaan maar nog geen adres hebt ingevuld, kan de beheerder je een herinneringsmail sturen om je adres toe te voegen.</p>
           <p>Gegevens zijn niet publiek zichtbaar en worden niet gebruikt voor advertenties, tracking of verkoop aan derden.</p>
         </section>
 

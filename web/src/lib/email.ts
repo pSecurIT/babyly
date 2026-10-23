@@ -111,6 +111,80 @@ export async function sendMagicLink(input: SendMagicLinkInput) {
   console.info(`[magic-link:${input.purpose}] ${input.email} -> ${input.link}`);
 }
 
+type SendAddressReminderInput = {
+  participantId: string;
+  email: string;
+  name: string | null;
+  link: string;
+};
+
+function addressReminderHtml(input: SendAddressReminderInput): string {
+  const safeLink = escapeHtml(input.link);
+  const greeting = input.name ? `Hoi ${escapeHtml(input.name)},` : "Hoi,";
+
+  return `<!doctype html>
+<html lang="nl">
+  <body style="margin:0;background:#f3fbf1;color:#244a37;font-family:Arial,Helvetica,sans-serif;">
+    <div style="padding:32px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;margin:0 auto;">
+        <tr>
+          <td style="padding:36px 32px;border:2px solid #cfecc7;border-radius:28px;background:#ffffff;">
+            <h1 style="margin:0;text-align:center;color:#234a37;font-size:28px;line-height:1.2;">Een kaartje voor de baby? 💌</h1>
+            <p style="margin:20px 0 0;color:#3c594b;font-size:17px;line-height:1.6;">${greeting}</p>
+            <p style="margin:12px 0 0;color:#3c594b;font-size:17px;line-height:1.6;">Bedankt voor je voorspelling! Je hebt nog geen adres achtergelaten. Vul het in, dan sturen we je een kaartje zodra de baby er is.</p>
+            <div style="margin:28px 0;text-align:center;">
+              <a href="${safeLink}" style="display:inline-block;padding:16px 26px;border-radius:20px;background:#67c96f;color:#ffffff;font-size:17px;font-weight:800;text-decoration:none;">Adres invullen →</a>
+            </div>
+            <p style="margin:0;color:#6c8576;text-align:center;font-size:13px;line-height:1.5;">Deze persoonlijke link is tijdelijk geldig en kan maar één keer worden gebruikt.<br>Werkt de knop niet? Kopieer dan deze link:<br><span style="color:#4a9d61;word-break:break-all;">${safeLink}</span></p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>`;
+}
+
+export async function sendAddressReminder(input: SendAddressReminderInput) {
+  const env = getEnv();
+
+  if (env.EMAIL_DELIVERY_MODE !== "provider") {
+    console.info(`[address-reminder:local] ${input.email} -> ${input.link}`);
+    return;
+  }
+
+  const resend = new Resend(env.RESEND_API_KEY);
+  const text = [
+    input.name ? `Hoi ${input.name},` : "Hoi,",
+    "",
+    "Bedankt voor je voorspelling! Je hebt nog geen adres achtergelaten.",
+    "Vul het in via onderstaande link, dan sturen we je een kaartje zodra de baby er is:",
+    input.link,
+    "",
+    "De link is tijdelijk geldig en kan maar eenmaal worden gebruikt.",
+  ].join("\n");
+
+  try {
+    const result = await resend.emails.send({
+      from: env.EMAIL_FROM!,
+      to: [input.email],
+      subject: "Laat je adres achter voor een kaartje van Babyly",
+      text,
+      html: addressReminderHtml(input),
+    }, {
+      idempotencyKey: `address-reminder/${input.participantId}/${new Date().toISOString().slice(0, 10)}`,
+    });
+
+    if (result.error) {
+      console.error("[email] address_reminder_rejected");
+      throw new Error("Herinnering kon niet worden verstuurd.");
+    }
+    console.info("[email] address_reminder_sent", { messageId: result.data?.id ?? "unknown" });
+  } catch {
+    console.error("[email] address_reminder_failed");
+    throw new Error("Herinnering kon niet worden verstuurd.");
+  }
+}
+
 export async function sendTestEmail() {
   const env = getEnv();
   if (env.EMAIL_DELIVERY_MODE !== "provider" || !env.RESEND_API_KEY || !env.EMAIL_FROM || !env.EMAIL_TEST_RECIPIENT) {

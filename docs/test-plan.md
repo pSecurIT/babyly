@@ -53,6 +53,15 @@ Security en privacy krijgen hoogste prioriteit. Alle tests moeten herhaalbaar zi
 - [ ] Validatie: alle required velden
 - [ ] CSRF/sessie checks identiek aan voorspelling
 
+### Feature C: Adres-herinneringen (`src/lib/reminders.test.ts`, `src/app/test/admin-reminders.test.ts`, `email.test.ts`)
+- [x] Doelgroep: alleen deelnemers met voorspelling en zonder adres
+- [x] Cooldown van 7 dagen; adres en cooldown worden vlak voor verzending opnieuw gecontroleerd
+- [x] Magic link: alleen hash opgeslagen, TTL 7 dagen, `next=/deelnemen/adres/formulier`
+- [x] Admin sessie + CSRF + bevestiging (bulk); bulk telt verzonden/overgeslagen/mislukt
+- [x] `reminderSentAt` alleen gezet na geslaagde verzending
+- [x] E-mail: Resend-pad, HTML-escaping, console-modus, foutnormalisatie
+- [x] CSRF-token in beide formulieren op `/admin/email`
+
 ### Cross-prompting
 - [ ] Na voorspelling: bedankpagina toont adres-knop
 - [ ] Na adres: bedankpagina toont voorspel-knop
