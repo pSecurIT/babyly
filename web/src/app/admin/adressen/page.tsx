@@ -5,7 +5,12 @@ import { BackButton } from "@/components/BackButton";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { ConfirmClearForm } from "@/components/admin/ConfirmClearForm";
 import { CLEAR_ADDRESSES_PHRASE } from "@/lib/admin-clear-phrases";
-import { clearAddressesAction, mailAddressesCsvAction } from "@/app/admin/actions";
+import {
+  clearAddressesAction,
+  deleteAddressParticipantAction,
+  mailAddressesCsvAction,
+  resetAddressAction,
+} from "@/app/admin/actions";
 import { getCsrfToken } from "@/lib/csrf";
 
 type AdminAddressesProps = {
@@ -38,6 +43,21 @@ export default async function AdminAddressesPage({ searchParams }: AdminAddresse
         <h1 className="text-3xl font-extrabold text-[#234a37]">Ingevulde adressen</h1>
         <AdminTabs active="adressen" />
 
+        {params.deleted === "1" && (
+          <p className="mt-4 rounded-2xl border border-[#a9dba0] bg-[#ebf9ee] p-4 text-[#234a37]">
+            Deelnemer verwijderd.
+          </p>
+        )}
+        {params.reset === "1" && (
+          <p className="mt-4 rounded-2xl border border-[#a9dba0] bg-[#ebf9ee] p-4 text-[#234a37]">
+            Adres gereset.
+          </p>
+        )}
+        {params.error === "ongeldig" && (
+          <p className="mt-4 rounded-2xl border border-[#e2a4a4] bg-[#fdeeee] p-4 text-[#7a2b2b]">
+            Ongeldig verzoek. Probeer het opnieuw.
+          </p>
+        )}
         {params.cleared === "1" && (
           <p className="mt-4 rounded-2xl border border-[#a9dba0] bg-[#ebf9ee] p-4 text-[#234a37]">
             Alle adressen zijn gewist.
@@ -96,6 +116,7 @@ export default async function AdminAddressesPage({ searchParams }: AdminAddresse
                 <th className="py-2 pr-4">Land</th>
                 <th className="py-2 pr-4">Deelnemer</th>
                 <th className="py-2 pr-4">Ingevuld op</th>
+                <th className="py-2 pr-4">Acties</th>
               </tr>
             </thead>
             <tbody>
@@ -111,11 +132,29 @@ export default async function AdminAddressesPage({ searchParams }: AdminAddresse
                     <div className="text-xs text-[#4f6a5d]">{address.participant?.email ?? "-"}</div>
                   </td>
                   <td className="py-2 pr-4">{address.createdAt.toLocaleString("nl-NL")}</td>
+                  <td className="py-2 pr-4">
+                    <div className="flex gap-2">
+                      <form action={resetAddressAction}>
+                        <input type="hidden" name="csrfToken" value={csrfToken} />
+                        <input type="hidden" name="participantId" value={address.participantId} />
+                        <button type="submit" className="text-xs font-bold text-[#4a9d61] underline">
+                          Reset
+                        </button>
+                      </form>
+                      <form action={deleteAddressParticipantAction}>
+                        <input type="hidden" name="csrfToken" value={csrfToken} />
+                        <input type="hidden" name="participantId" value={address.participantId} />
+                        <button type="submit" className="text-xs font-bold text-[#a03d3d] underline">
+                          Verwijder
+                        </button>
+                      </form>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {addresses.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-4 text-center text-[#4f6a5d]">
+                  <td colSpan={8} className="py-4 text-center text-[#4f6a5d]">
                     Nog geen adressen ingevuld.
                   </td>
                 </tr>

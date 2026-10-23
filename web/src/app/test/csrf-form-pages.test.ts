@@ -39,6 +39,10 @@ vi.mock("@/app/admin/actions", () => ({
   clearAddressesAction: vi.fn(),
   mailPredictionsCsvAction: vi.fn(),
   mailAddressesCsvAction: vi.fn(),
+  sendAddressReminderAction: vi.fn(),
+  sendAllAddressRemindersAction: vi.fn(),
+  resetAddressAction: vi.fn(),
+  deleteAddressParticipantAction: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -50,6 +54,7 @@ vi.mock("next/navigation", () => ({
 import AdminAddressesPage from "@/app/admin/adressen/page";
 import AdminLoginPage from "@/app/admin/login/page";
 import AdminDashboardPage from "@/app/admin/page";
+import AdminEmailPage from "@/app/admin/email/page";
 import AdminPredictionsPage from "@/app/admin/voorspellingen/page";
 import Home from "@/app/page";
 import AddressFormPage from "@/app/deelnemen/adres/formulier/page";
@@ -107,7 +112,18 @@ async function renderPages() {
     updatedAt: new Date("2026-08-01T10:00:00Z"),
     participant: { name: "Emma", email: "emma@example.com" },
   }]);
-  mockPrisma.addressCard.findMany.mockResolvedValue([]);
+  mockPrisma.addressCard.findMany.mockResolvedValue([{
+    id: "address-1",
+    participantId: "participant-1",
+    recipientName: "Emma",
+    street: "Straat",
+    houseNumber: "1",
+    postalCode: "1234AB",
+    city: "Stad",
+    country: "Nederland",
+    createdAt: new Date("2026-08-01T10:00:00Z"),
+    participant: { name: "Emma", email: "emma@example.com" },
+  }]);
   mockPrisma.addressCard.count.mockResolvedValue(0);
   const admin = renderToStaticMarkup(await AdminDashboardPage({ searchParams: Promise.resolve({}) }));
   const adminPredictions = renderToStaticMarkup(
@@ -115,7 +131,12 @@ async function renderPages() {
   );
   const adminAddresses = renderToStaticMarkup(await AdminAddressesPage({ searchParams: Promise.resolve({}) }));
 
-  return { home, adminLogin, prediction, address, admin, adminPredictions, adminAddresses };
+  mockPrisma.participant.findMany.mockResolvedValueOnce([
+    { id: "participant-2", name: "Anna", email: "anna@example.com", reminderSentAt: null, createdAt: new Date() },
+  ]);
+  const adminEmail = renderToStaticMarkup(await AdminEmailPage({ searchParams: Promise.resolve({}) }));
+
+  return { home, adminLogin, prediction, address, admin, adminPredictions, adminAddresses, adminEmail };
 }
 
 describe("CSRF-dekking van paginaformulieren", () => {
@@ -145,7 +166,8 @@ describe("CSRF-dekking van paginaformulieren", () => {
       address: 1,
       admin: 1,
       adminPredictions: 4,
-      adminAddresses: 2,
+      adminAddresses: 4,
+      adminEmail: 2,
     };
 
     for (const [page, html] of Object.entries(pages)) {

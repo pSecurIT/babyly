@@ -19,7 +19,7 @@ vi.mock("@/lib/security", () => ({
   sha256Hex: vi.fn(() => "link-hash"),
 }));
 
-import { sendMagicLink, sendTestEmail } from "@/lib/email";
+import { sendAddressReminder, sendMagicLink, sendTestEmail } from "@/lib/email";
 
 describe("transactionele e-mail", () => {
   beforeEach(() => {
@@ -290,5 +290,54 @@ describe("transactionele e-mail", () => {
     const call = mockSend.mock.calls[0];
     const options = call[1];
     expect(options.idempotencyKey).toBe("magic-link/link-hash");
+  });
+
+  describe("sendAddressReminder", () => {
+    const input = {
+      participantId: "p1",
+      email: "anna@example.com",
+      name: "Anna <b>",
+      link: "https://baby.example.invalid/api/auth/verify?token=secret&next=/deelnemen/adres/formulier",
+    };
+    const providerEnv = {
+      EMAIL_DELIVERY_MODE: "provider",
+      RESEND_API_KEY: "test-api-key",
+      EMAIL_FROM: "Babyly <baby@example.invalid>",
+    };
+
+    it("verstuurt de herinnering via Resend met escaped naam en link", async () => {
+      mockGetEnv.mockReturnValue(providerEnv);
+      mockSend.mockResolvedValue({ data: { id: "rem-1" }, error: null });
+
+      await sendAddressReminder(input);
+
+      const [payload, options] = mockSend.mock.calls[0];
+      expect(payload.to).toEqual(["anna@example.com"]);
+      expect(payload.text).toContain("token=secret");
+      expect(payload.html).toContain("token=secret&amp;next=");
+      expect(payload.html).toContain("Anna &lt;b&gt;");
+      expect(payload.html).not.toContain("Anna <b>");
+      expect(options.idempotencyKey).toMatch(/^address-reminder\/p1\/\d{4}-\d{2}-\d{2}$/);
+    });
+
+    it("logt alleen lokaal in console-modus", async () => {
+      mockGetEnv.mockReturnValue({ EMAIL_DELIVERY_MODE: "console" });
+      const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+
+      await sendAddressReminder(input);
+
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(infoSpy).toHaveBeenCalled();
+      infoSpy.mockRestore();
+    });
+
+    it("normaliseert fouten zonder provider-details te lekken", async () => {
+      mockGetEnv.mockReturnValue(providerEnv);
+      mockSend.mockRejectedValue(new Error("provider secret detail"));
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+      await expect(sendAddressReminder(input)).rejects.toThrow("Herinnering kon niet worden verstuurd.");
+      errorSpy.mockRestore();
+    });
   });
 });

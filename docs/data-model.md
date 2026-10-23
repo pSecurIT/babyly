@@ -12,6 +12,7 @@ Minimaal relationeel model met harde server-side constraints. Beheerd via Prisma
 | name | String? | Optioneel |
 | email | String | `@unique`, genormaliseerd (lowercase, trim) |
 | emailVerifiedAt | DateTime? | Tijdstip verificatie |
+| reminderSentAt | DateTime? | Laatste adres-herinnering (cooldown 7 dagen) |
 | createdAt | DateTime | `@default(now())` |
 | updatedAt | DateTime | `@updatedAt` |
 

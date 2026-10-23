@@ -1,11 +1,12 @@
 import Link from "next/link";
 
-type AdminTabKey = "overzicht" | "voorspellingen" | "adressen";
+type AdminTabKey = "overzicht" | "voorspellingen" | "adressen" | "email";
 
 const TABS: { key: AdminTabKey; href: string; label: string }[] = [
   { key: "overzicht", href: "/admin", label: "📊 Overzicht" },
   { key: "voorspellingen", href: "/admin/voorspellingen", label: "🔮 Voorspellingen" },
   { key: "adressen", href: "/admin/adressen", label: "📮 Adressen" },
+  { key: "email", href: "/admin/email", label: "✉️ E-mail" },
 ];
 
 export function AdminTabs({ active }: { active: AdminTabKey }) {

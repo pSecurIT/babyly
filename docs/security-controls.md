@@ -39,6 +39,8 @@ In-memory `Map` (key → `{ count, resetAt }`). Keys:
 - `code:{ip}` — toegangscode pogingen: 15 / 10 min
 - `mail:{ip}` — magic link aanvragen: 10 / 10 min
 - `verify:{ip}` — verificatie pogingen: (via magic link token expiry)
+- `admin-reminder:{adminId}` — enkele herinneringen: 60 / 10 min
+- `admin-reminder-bulk:{adminId}` — bulk herinneringen: 5 / 10 min
 
 **Let op**: in-memory werkt niet over meerdere instances. Voor productie met schaling: Redis/Valkey.
 
@@ -100,6 +102,8 @@ Grenzen:
 - `[request-link] csrf_rejected | input_rejected | rate_limited | access_code_check_started | access_code_rejected | access_code_accepted | token_created | completed`
 - `[email] provider_accepted | provider_failed | provider_rejected`
 - `[admin-audit] participant_deleted | prediction_reset | participant_data_purged | csv_exported`
+- `[admin-audit] address_reminder_sent | address_reminder_skipped | address_reminders_bulk` (alleen aantallen)
+- `[email] address_reminder_sent | address_reminder_rejected | address_reminder_failed`
 - `[email-test] sending | sent <message-id> | provider_failed`
 
 ## Misbruikpreventie

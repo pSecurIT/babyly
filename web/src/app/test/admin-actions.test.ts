@@ -11,6 +11,9 @@ const { mockReadAdminSession, mockPrisma } = vi.hoisted(() => {
     prediction: {
       deleteMany: vi.fn(),
     },
+    addressCard: {
+      deleteMany: vi.fn(),
+    },
     magicLinkToken: {
       deleteMany: vi.fn(),
     },
@@ -38,7 +41,13 @@ vi.mock("@/lib/db", () => ({
   prisma: mockPrisma,
 }));
 
-import { deleteParticipantAction, purgeAllAction, resetPredictionAction } from "@/app/admin/actions";
+import {
+  deleteAddressParticipantAction,
+  deleteParticipantAction,
+  purgeAllAction,
+  resetAddressAction,
+  resetPredictionAction,
+} from "@/app/admin/actions";
 import { CLEAR_ALL_PHRASE } from "@/lib/admin-clear-phrases";
 
 describe("admin acties", () => {
@@ -48,6 +57,7 @@ describe("admin acties", () => {
     mockPrisma.participant.delete.mockReset();
     mockPrisma.participant.deleteMany.mockReset();
     mockPrisma.prediction.deleteMany.mockReset();
+    mockPrisma.addressCard.deleteMany.mockReset();
     mockPrisma.magicLinkToken.deleteMany.mockReset();
   });
 
@@ -89,6 +99,41 @@ describe("admin acties", () => {
 
     await expect(resetPredictionAction(formData)).rejects.toThrow("/admin/voorspellingen?reset=1");
     expect(mockPrisma.prediction.deleteMany).toHaveBeenCalledWith({ where: { participantId: "participant-1" } });
+  });
+
+  it("reset een adres zodat opnieuw invullen mogelijk is", async () => {
+    mockReadAdminSession.mockResolvedValue({ sub: "admin@example.com", scope: "admin", exp: 9999999999 });
+    mockPrisma.addressCard.deleteMany.mockResolvedValue({ count: 1 });
+
+    const formData = new FormData();
+    formData.set("participantId", "participant-1");
+
+    await expect(resetAddressAction(formData)).rejects.toThrow("/admin/adressen?reset=1");
+    expect(mockPrisma.addressCard.deleteMany).toHaveBeenCalledWith({ where: { participantId: "participant-1" } });
+  });
+
+  it("verwijdert een deelnemer vanuit het adressenoverzicht", async () => {
+    mockReadAdminSession.mockResolvedValue({ sub: "admin@example.com", scope: "admin", exp: 9999999999 });
+    mockPrisma.participant.delete.mockResolvedValue(undefined);
+
+    const formData = new FormData();
+    formData.set("participantId", "participant-1");
+
+    await expect(deleteAddressParticipantAction(formData)).rejects.toThrow("/admin/adressen?deleted=1");
+    expect(mockPrisma.participant.delete).toHaveBeenCalledWith({ where: { id: "participant-1" } });
+  });
+
+  it("weigert adresacties zonder adminsessie of participantId", async () => {
+    mockReadAdminSession.mockResolvedValue(null);
+    const formData = new FormData();
+    formData.set("participantId", "participant-1");
+    await expect(resetAddressAction(formData)).rejects.toThrow("/admin/login");
+    await expect(deleteAddressParticipantAction(formData)).rejects.toThrow("/admin/login");
+
+    mockReadAdminSession.mockResolvedValue({ sub: "admin@example.com", scope: "admin", exp: 9999999999 });
+    await expect(resetAddressAction(new FormData())).rejects.toThrow("/admin/adressen?error=ongeldig");
+    expect(mockPrisma.addressCard.deleteMany).not.toHaveBeenCalled();
+    expect(mockPrisma.participant.delete).not.toHaveBeenCalled();
   });
 
   it("purget alle deelnemergegevens in een transactie na juiste bevestiging", async () => {
