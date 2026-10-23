@@ -108,7 +108,7 @@ Zie [docs/production-deployment.md](docs/production-deployment.md) voor volledig
 
 ## Security Highlights
 - Access code hash only in DB
-- Magic links: crypto random, SHA-256 hash, 24h TTL, single-use
+- Magic links: crypto random, SHA-256 hash, 24h default TTL (configurable via `MAGIC_LINK_TTL_MINUTES`, max 30 days), single-use
 - CSRF: double-submit cookie (middleware + Server Actions)
 - Sessions: HMAC-SHA256 signed, HttpOnly, Secure, SameSite
 - Rate limiting: IP-based (in-memory, Redis voor multi-instance)

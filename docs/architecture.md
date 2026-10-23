@@ -16,7 +16,7 @@ Eenvoudige, veilige Nederlandstalige website met twee losse gebruikersflows:
 1. Browser is niet vertrouwd — alle validatie/autorisatie server-side
 2. Backend is bron van waarheid voor auth, autorisatie, validatie, business logic
 3. Database alleen via Prisma (backend) benaderd
-4. Magic links: tijdelijk (24h default), eenmalig, hash-only storage
+4. Magic links: tijdelijk (24h default, via `MAGIC_LINK_TTL_MINUTES` tot 30 dagen), eenmalig, hash-only storage
 5. Admin: apart sessiescope, allowlist-check server-side
 
 ## Runtime Security

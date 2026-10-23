@@ -14,7 +14,7 @@
 | Test | Steps | Expected |
 |------|-------|----------|
 | **A1** Valid magic link flow | 1. Enter access code + email<br>2. Click magic link<br>3. Verify redirect to `/` | Session cookie set, access to flows |
-| **A2** Expired magic link | Use link >24h after request | Redirect to `/?auth=failed` |
+| **A2** Expired magic link | Use link after `MAGIC_LINK_TTL_MINUTES` (default 24h) has passed | Redirect to `/?auth=failed` |
 | **A3** Reused magic link | Click same link twice | Second use → `/?auth=failed` |
 | **A4** Invalid access code | Enter wrong code | Generic "check mail" (no detail) |
 | **A5** Rate limit: access code | 15+ attempts from same IP in 10min | Blocked, generic response |
