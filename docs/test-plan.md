@@ -35,7 +35,8 @@ Security en privacy krijgen hoogste prioriteit. Alle tests moeten herhaalbaar zi
 - [ ] Rate limit toegangscode (`code:{ip}`) → 15/10min blokkade
 - [ ] Rate limit magic link (`mail:{ip}`) → 10/10min blokkade
 - [ ] Geldige magic link verificatie → sessie cookie + redirect `/`
-- [ ] Verlopen token (>24h) → `/?auth=failed`
+- [ ] Verlopen token (na `MAGIC_LINK_TTL_MINUTES`, default 24h) → `/?auth=failed`
+- [x] `MAGIC_LINK_TTL_MINUTES` accepteert 7 dagen (10080); weigert <5 minuten en >30 dagen (`security.test.ts`)
 - [ ] Replay token (al gebruikt) → `/?auth=failed`
 - [ ] Admin magic link: allowlist check → toegang / afwijzing
 

@@ -12,7 +12,7 @@
 ### Magic Links
 1. Token: 32 cryptografisch willekeurige bytes → 64-char hex
 2. Alleen SHA-256 hash opslaan (`tokenHash`)
-3. TTL: `MAGIC_LINK_TTL_MINUTES` (default 1440 = 24h)
+3. TTL: `MAGIC_LINK_TTL_MINUTES` (default 1440 = 24h, min 5 minuten, max 43200 = 30 dagen)
 4. Single-use: atomische `usedAt` update met `updateMany` where `usedAt: null`
 5. Doelgebonden: `guest_login` of `admin_login` (apart tokens)
 6. Verlopen/gebruikte tokens worden periodiek opgeruimd

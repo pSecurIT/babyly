@@ -56,7 +56,7 @@ Minimaal relationeel model met harde server-side constraints. Beheerd via Prisma
 | email | String | E-mailadres |
 | tokenHash | String | SHA-256 hex van token |
 | purpose | TokenPurpose | Enum: `guest_login` \| `admin_login` |
-| expiresAt | DateTime | TTL (default 24h) |
+| expiresAt | DateTime | TTL (default 24h, configureerbaar tot 30 dagen) |
 | usedAt | DateTime? | Null = nog niet gebruikt |
 | createdAt | DateTime | `@default(now())` |
 | participantId | String? | Optionele FK → participants.id (SetNull on delete) |

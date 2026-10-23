@@ -105,7 +105,7 @@ Behandel beveiliging als kernvereiste. Belangrijke controles zijn uitsluitend se
 ### E-mailverificatie
 
 1. Gebruik cryptografisch veilige, willekeurige, eenmalige tokens/codes.
-2. Verlooptijd: maximaal 24 uur.
+2. Verlooptijd: standaard 24 uur, instelbaar via `MAGIC_LINK_TTL_MINUTES` (max. 30 dagen).
 3. Token is single-use.
 4. Sla token niet in plaintext op; bewaar hash.
 5. Rate-limit op aanvragen en retries.
