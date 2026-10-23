@@ -290,7 +290,7 @@ een echte testaanvraag dat de magic link aankomt en éénmalig werkt. De
 verzending gebruikt een idempotency key op basis van de linkhash om dubbele
 verzending bij veilige retries te voorkomen.
 
-Magic links zijn maximaal 24 uur geldig zolang ze niet zijn gebruikt. Na een
+Magic links zijn standaard 24 uur geldig (`MAGIC_LINK_TTL_MINUTES`, instelbaar van 5 minuten tot 30 dagen) zolang ze niet zijn gebruikt. Na een
 succesvolle verificatie wordt de link direct ongeldig en blijft de beveiligde
 gast- of adminsessie maximaal 24 uur geldig.
 

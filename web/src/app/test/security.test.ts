@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { adminEmailSet, getEnv } from "@/lib/env";
 
@@ -25,5 +25,17 @@ describe("security en sessies", () => {
 
   it("staat magic-link TTL tot 24 uur toe", () => {
     expect(getEnv().MAGIC_LINK_TTL_MINUTES).toBe(1440);
+  });
+
+  it("accepteert een TTL van 7 dagen en weigert meer dan 30 dagen", async () => {
+    const load = async (ttl: string) => {
+      vi.resetModules();
+      process.env.MAGIC_LINK_TTL_MINUTES = ttl;
+      return (await import("@/lib/env")).getEnv();
+    };
+
+    expect((await load("10080")).MAGIC_LINK_TTL_MINUTES).toBe(10080);
+    await expect(load(String(30 * 24 * 60 + 1))).rejects.toThrow();
+    await expect(load("4")).rejects.toThrow();
   });
 });
