@@ -5,10 +5,17 @@ on:
     workflows: [CI]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit on main to (re)deploy; defaults to the tip of main. Also the manual rollback path.
+        required: false
+        type: string
 
 permissions:
   contents: read
 
+# GitHub keeps only the newest pending run per group, so the newest commit always wins.
 concurrency:
   group: production-deploy
   cancel-in-progress: false
@@ -16,25 +23,39 @@ concurrency:
 jobs:
   deploy:
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main'
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
       name: production
     env:
-      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || inputs.sha || github.sha }}
+      # A manual dispatch may deploy an older commit on purpose (rollback).
+      DEPLOY_FORCE: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
       SMOKE_URL: ${{ secrets.DEPLOY_SMOKE_URL }}
+    outputs:
+      deployed: ${{ steps.summary.outputs.deployed }}
+      deploy_outcome: ${{ steps.deploy.outcome }}
+      smoke_outcome: ${{ steps.smoke.outcome }}
+      rollback_status: ${{ steps.summary.outputs.rollback_status }}
 
     steps:
-      - name: Configure SSH key
+      - name: Validate inputs and configure SSH key
         shell: bash
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/opt/babyly' }}
         run: |
           set -euo pipefail
+          # These values end up inside an SSH command line, so only accept strict formats.
+          [[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "DEPLOY_SHA must be a full 40-character commit SHA" >&2; exit 1; }
+          [[ "$DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ ]] || { echo "DEPLOY_PATH contains unexpected characters" >&2; exit 1; }
           install -m 700 -d "$RUNNER_TEMP/babyly-ssh"
           printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/babyly-ssh/id_ed25519"
           chmod 600 "$RUNNER_TEMP/babyly-ssh/id_ed25519"
@@ -46,6 +67,7 @@ jobs:
           fi
 
       - name: Deploy exact tested commit
+        id: deploy
         shell: bash
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -62,30 +84,298 @@ jobs:
             -o ServerAliveInterval=60 \
             -o ServerAliveCountMax=5 \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE'
+            "DEPLOY_PATH='$DEPLOY_PATH' DEPLOY_SHA='$DEPLOY_SHA' DEPLOY_FORCE='$DEPLOY_FORCE' bash -s" <<'REMOTE' | tee "$RUNNER_TEMP/deploy.log"
           set -euo pipefail
+          STEP=init
+          log() { printf '[deploy] %s\n' "$*"; }
+          retry() { local n=0; until "$@"; do n=$((n + 1)); [ "$n" -ge 3 ] && return 1; sleep 5; done; }
+          diagnostics() {
+            echo "[deploy] FAILED during step: $STEP" >&2
+            ( cd "$DEPLOY_PATH/web" && docker compose ps && docker compose logs --tail=40 app ) >&2 || true
+          }
+          trap diagnostics ERR
+
+          # One deploy at a time, also against manual runs on the server.
+          exec 9>/tmp/babyly-deploy.lock
+          flock -w 900 9 || { echo "[deploy] could not obtain the deploy lock" >&2; exit 1; }
+
           cd "$DEPLOY_PATH"
-          git fetch --prune origin "$DEPLOY_SHA"
-          git checkout --detach "$DEPLOY_SHA"
+          STATE_FILE="$DEPLOY_PATH/.last-deployed-sha"
+
+          STEP=disk-check
+          free_gb() { df --output=avail -BG "$DEPLOY_PATH" | tail -n 1 | tr -dc '0-9'; }
+          if [ "$(free_gb)" -lt 3 ]; then
+            log "low disk space, pruning unused Docker data"
+            docker image prune -af >/dev/null || true
+            docker builder prune -af >/dev/null || true
+            if [ "$(free_gb)" -lt 3 ]; then
+              echo "[deploy] less than 3 GB free after pruning" >&2
+              false
+            fi
+          fi
+
+          STEP=fetch
+          retry git fetch --prune origin main "$DEPLOY_SHA"
           git cat-file -e "$DEPLOY_SHA^{commit}"
+          if ! git merge-base --is-ancestor "$DEPLOY_SHA" origin/main; then
+            echo "[deploy] $DEPLOY_SHA is not on origin/main" >&2
+            false
+          fi
+
+          STEP=guard
+          PREVIOUS_SHA="$(cat "$STATE_FILE" 2>/dev/null || git rev-parse HEAD)"
+          if [ "$DEPLOY_FORCE" != "true" ] && [ "$PREVIOUS_SHA" != "$DEPLOY_SHA" ] \
+            && git cat-file -e "$PREVIOUS_SHA^{commit}" 2>/dev/null \
+            && git merge-base --is-ancestor "$DEPLOY_SHA" "$PREVIOUS_SHA"; then
+            log "newer commit $PREVIOUS_SHA is already deployed; skipping $DEPLOY_SHA"
+            echo "DEPLOY_RESULT=skipped-outdated"
+            exit 0
+          fi
+          echo "DEPLOY_PREVIOUS_SHA=$PREVIOUS_SHA"
+
+          STEP=checkout
+          git checkout --force --detach "$DEPLOY_SHA"
           cd web
+          export GIT_SHA="$DEPLOY_SHA"
+
+          STEP=build
+          docker compose build app
+
           # -T and </dev/null stop compose run from consuming the rest of this script via stdin
-          docker compose run -T --build --rm --user root app \
-            node_modules/.bin/prisma migrate deploy \
-            --schema=/app/prisma/schema.prisma </dev/null
-          docker compose up -d --build
+          PRISMA=(docker compose run -T --rm --user root app node_modules/.bin/prisma)
+          SCHEMA=--schema=/app/prisma/schema.prisma
+
+          STEP=migrate-precheck
+          status_output="$("${PRISMA[@]}" migrate status "$SCHEMA" </dev/null 2>&1 || true)"
+          if printf '%s' "$status_output" | grep -Eqi 'failed migration|have failed|P3009|failed to apply'; then
+            printf '%s\n' "$status_output" >&2
+            echo "[deploy] A previous migration is in a failed state and blocks all deploys." >&2
+            echo "[deploy] On the server: fix the cause, then run 'prisma migrate resolve --rolled-back <migration_name>' (or --applied if it did complete), and re-run this workflow." >&2
+            false
+          fi
+
+          STEP=migrate
+          "${PRISMA[@]}" migrate deploy "$SCHEMA" </dev/null
+
+          STEP=migrate-verify
+          "${PRISMA[@]}" migrate status "$SCHEMA" </dev/null
+
+          STEP=cutover
+          echo "DEPLOY_CUTOVER=started"
+          docker compose up -d --build --remove-orphans
+
+          STEP=containers
+          running() { docker compose ps --status running --services; }
+          all_running() {
+            local services
+            services="$(running)"
+            for service in app db caddy; do
+              grep -qx "$service" <<<"$services" || return 1
+            done
+          }
+          started=false
+          for _ in $(seq 1 30); do
+            if all_running; then started=true; break; fi
+            sleep 2
+          done
+          if [ "$started" != "true" ]; then
+            echo "[deploy] app, db and caddy did not all reach the running state" >&2
+            false
+          fi
+          sleep 10
+          if ! all_running; then
+            echo "[deploy] a container stopped shortly after starting (crash loop?)" >&2
+            false
+          fi
+
+          STEP=record
+          printf '%s\n' "$DEPLOY_SHA" > "$STATE_FILE"
+          docker image prune -f >/dev/null || true
+          echo "DEPLOY_RESULT=deployed"
           REMOTE
 
-      - name: Smoke test production HTTPS endpoint
+      - name: Read deploy result
+        id: result
+        if: always()
         shell: bash
         run: |
+          log="$RUNNER_TEMP/deploy.log"
+          deployed=false; cutover=false; previous=""
+          if [ -f "$log" ]; then
+            grep -q '^DEPLOY_RESULT=deployed' "$log" && deployed=true
+            grep -q '^DEPLOY_CUTOVER=started' "$log" && cutover=true
+            previous="$(sed -n 's/^DEPLOY_PREVIOUS_SHA=\([0-9a-f]\{40\}\)$/\1/p' "$log" | head -n 1)"
+          fi
+          {
+            echo "deployed=$deployed"
+            echo "cutover=$cutover"
+            echo "previous=$previous"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout deployed commit for smoke test
+        if: always() && (steps.result.outputs.deployed == 'true' || steps.result.outputs.cutover == 'true')
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+
+      - name: Smoke test production
+        id: smoke
+        if: steps.result.outputs.deployed == 'true'
+        timeout-minutes: 10
+        shell: bash
+        run: bash scripts/smoke-test.sh "$SMOKE_URL" "$DEPLOY_SHA"
+
+      - name: Roll back to the previous commit
+        id: rollback
+        if: >-
+          always() &&
+          steps.result.outputs.cutover == 'true' &&
+          steps.result.outputs.previous != '' &&
+          steps.result.outputs.previous != env.DEPLOY_SHA &&
+          (steps.deploy.outcome == 'failure' || steps.smoke.outcome == 'failure')
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH || '/opt/babyly' }}
+          ROLLBACK_SHA: ${{ steps.result.outputs.previous }}
+        run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location \
-            --retry 10 --retry-delay 3 --retry-connrefused \
-            --max-time 15 "$SMOKE_URL" > "$RUNNER_TEMP/babyly-smoke.html"
-          grep -Fq '<html' "$RUNNER_TEMP/babyly-smoke.html"
+          ssh \
+            -i "$RUNNER_TEMP/babyly-ssh/id_ed25519" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/babyly-ssh/known_hosts" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' ROLLBACK_SHA='$ROLLBACK_SHA' bash -s" <<'REMOTE'
+          set -euo pipefail
+          exec 9>/tmp/babyly-deploy.lock
+          flock -w 900 9
+          cd "$DEPLOY_PATH"
+          git cat-file -e "$ROLLBACK_SHA^{commit}"
+          git checkout --force --detach "$ROLLBACK_SHA"
+          cd web
+          export GIT_SHA="$ROLLBACK_SHA"
+          docker compose up -d --build --remove-orphans
+          printf '%s\n' "$ROLLBACK_SHA" > "$DEPLOY_PATH/.last-deployed-sha"
+          REMOTE
+
+      - name: Smoke test after rollback
+        id: rollback_smoke
+        if: always() && steps.rollback.outcome == 'success'
+        shell: bash
+        env:
+          ROLLBACK_SHA: ${{ steps.result.outputs.previous }}
+        run: bash scripts/smoke-test.sh "$SMOKE_URL" "$ROLLBACK_SHA"
+
+      - name: Summarize
+        id: summary
+        if: always()
+        shell: bash
+        env:
+          ROLLBACK_OUTCOME: ${{ steps.rollback.outcome }}
+          ROLLBACK_SMOKE_OUTCOME: ${{ steps.rollback_smoke.outcome }}
+          DEPLOYED: ${{ steps.result.outputs.deployed }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+        run: |
+          status=none
+          if [ "$ROLLBACK_OUTCOME" = "success" ] && [ "$ROLLBACK_SMOKE_OUTCOME" = "success" ]; then
+            status=restored
+          elif [ "$ROLLBACK_OUTCOME" = "success" ] || [ "$ROLLBACK_OUTCOME" = "failure" ]; then
+            status=failed
+          fi
+          # Only a deploy that also passed the smoke test counts as recovered.
+          deployed=false
+          if [ "$DEPLOYED" = "true" ] && [ "$SMOKE_OUTCOME" = "success" ] && [ "$DEPLOY_OUTCOME" = "success" ]; then
+            deployed=true
+          fi
+          echo "rollback_status=$status" >> "$GITHUB_OUTPUT"
+          echo "deployed=$deployed" >> "$GITHUB_OUTPUT"
 
       - name: Remove temporary SSH material
         if: always()
         shell: bash
         run: rm -rf "$RUNNER_TEMP/babyly-ssh"
+
+  report:
+    needs: deploy
+    if: >-
+      always() && (
+        needs.deploy.result == 'failure' ||
+        (needs.deploy.result == 'success' && needs.deploy.outputs.deployed == 'true') ||
+        (needs.deploy.result == 'skipped' &&
+         github.event.workflow_run.conclusion == 'failure' &&
+         github.event.workflow_run.head_branch == 'main' &&
+         github.event.workflow_run.event == 'push' &&
+         github.event.workflow_run.head_repository.full_name == github.repository)
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Open, update or close the deploy alert issue
+        uses: actions/github-script@v7
+        env:
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          DEPLOY_OUTCOME: ${{ needs.deploy.outputs.deploy_outcome }}
+          SMOKE_OUTCOME: ${{ needs.deploy.outputs.smoke_outcome }}
+          ROLLBACK_STATUS: ${{ needs.deploy.outputs.rollback_status }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha || inputs.sha || github.sha }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const label = 'deploy-failed';
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const sha = process.env.TARGET_SHA;
+            const short = sha.slice(0, 12);
+
+            const listOpen = async () => (await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: label, per_page: 20,
+            })).data.filter((issue) => !issue.pull_request);
+
+            if (process.env.DEPLOY_RESULT === 'success') {
+              for (const issue of await listOpen()) {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: issue.number,
+                  body: `Recovered: ${short} was deployed and passed the smoke test.\n\n${runUrl}`,
+                });
+                await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' });
+              }
+              return;
+            }
+
+            let title;
+            const lines = [`Commit: ${sha}`, `Run: ${runUrl}`, ''];
+            if (process.env.DEPLOY_RESULT === 'skipped') {
+              title = 'CI failed on main - nothing was deployed';
+              lines.push('CI failed for this commit, so the deploy workflow did not run. Production still runs the previous version.');
+            } else {
+              title = 'Production deploy failed';
+              const smokeRan = process.env.SMOKE_OUTCOME && process.env.SMOKE_OUTCOME !== 'skipped';
+              lines.push(smokeRan && process.env.DEPLOY_OUTCOME === 'success'
+                ? 'The deploy finished but the smoke test failed.'
+                : 'The deploy step failed; the log shows the failing step and the app logs.');
+              const rollback = {
+                restored: 'Automatic rollback to the previous commit succeeded and passed the smoke test. The database was not rolled back.',
+                failed: 'Automatic rollback was attempted but production is NOT healthy. Check the server now.',
+                none: 'No rollback was needed or possible; production may still run the previous version.',
+              }[process.env.ROLLBACK_STATUS || 'none'];
+              lines.push('', rollback, '', 'Fix forward by pushing to main, or re-run this workflow; a manual run can redeploy any commit on main.');
+            }
+            const body = lines.join('\n');
+
+            const open = await listOpen();
+            if (open.length > 0) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: open[0].number, body: `${title}\n\n${body}` });
+              return;
+            }
+            try {
+              await github.rest.issues.createLabel({ owner, repo, name: label, color: 'b60205' });
+            } catch (error) {
+              core.info('Label already exists');
+            }
+            await github.rest.issues.create({ owner, repo, title, body, labels: [label] });
