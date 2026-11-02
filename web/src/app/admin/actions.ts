@@ -7,8 +7,6 @@ import { buildAddressesCsv, buildPredictionsCsv } from "@/lib/csv";
 import { prisma } from "@/lib/db";
 import { sendCsvEmail } from "@/lib/email";
 import { readAdminSession } from "@/lib/session";
-import { rateLimit } from "@/lib/rate-limit";
-import { findReminderTargets, sendReminderTo } from "@/lib/reminders";
 import { confirmPhraseFieldSchema } from "@/lib/validation";
 
 export async function deleteParticipantAction(formData: FormData) {
@@ -176,7 +174,7 @@ export async function mailPredictionsCsvAction(formData: FormData) {
 
   try {
     await sendCsvEmail({
-      subject: "Babyly voorspellingen-export",
+      template: "csv_predictions",
       filename: "voorspellingen-export.csv",
       csv,
     });
@@ -214,7 +212,7 @@ export async function mailAddressesCsvAction(formData: FormData) {
 
   try {
     await sendCsvEmail({
-      subject: "Babyly adressen-export",
+      template: "csv_addresses",
       filename: "adressen-export.csv",
       csv,
     });
@@ -224,70 +222,4 @@ export async function mailAddressesCsvAction(formData: FormData) {
 
   console.info("[admin-audit] addresses_csv_emailed");
   redirect("/admin/adressen?mailed=1");
-}
-
-export async function sendAddressReminderAction(formData: FormData) {
-  const session = await readAdminSession();
-  if (!session) {
-    redirect("/admin/login");
-  }
-  if (!(await validateCsrfToken(csrfTokenFromForm(formData)))) {
-    redirect("/admin/email?error=ongeldig");
-  }
-
-  const participantId = String(formData.get("participantId") || "");
-  if (!participantId) {
-    redirect("/admin/email?error=ongeldig");
-  }
-  if (!rateLimit(`admin-reminder:${session.sub}`, 60, 10 * 60 * 1000).allowed) {
-    redirect("/admin/email?error=limiet");
-  }
-
-  let result: "sent" | "skipped";
-  try {
-    result = await sendReminderTo(participantId);
-  } catch {
-    redirect("/admin/email?error=mail");
-  }
-
-  console.info(`[admin-audit] address_reminder_${result}`);
-  redirect(result === "sent" ? "/admin/email?reminded=1&skipped=0" : "/admin/email?reminded=0&skipped=1");
-}
-
-export async function sendAllAddressRemindersAction(formData: FormData) {
-  const session = await readAdminSession();
-  if (!session) {
-    redirect("/admin/login");
-  }
-  if (!(await validateCsrfToken(csrfTokenFromForm(formData)))) {
-    redirect("/admin/email?error=ongeldig");
-  }
-  if (formData.get("confirm") !== "yes") {
-    redirect("/admin/email?error=bevestiging");
-  }
-  if (!rateLimit(`admin-reminder-bulk:${session.sub}`, 5, 10 * 60 * 1000).allowed) {
-    redirect("/admin/email?error=limiet");
-  }
-
-  const targets = await findReminderTargets();
-  let sent = 0;
-  let skipped = 0;
-  let failed = 0;
-
-  // Sequential on purpose to stay within provider rate limits.
-  for (const target of targets) {
-    try {
-      const result = await sendReminderTo(target.id);
-      if (result === "sent") {
-        sent += 1;
-      } else {
-        skipped += 1;
-      }
-    } catch {
-      failed += 1;
-    }
-  }
-
-  console.info(`[admin-audit] address_reminders_bulk sent=${sent} skipped=${skipped} failed=${failed}`);
-  redirect(`/admin/email?reminded=${sent}&skipped=${skipped}&failed=${failed}`);
 }

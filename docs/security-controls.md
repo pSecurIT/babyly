@@ -25,6 +25,16 @@
 4. Generieke redirect bij elke fout (geen enumeratie)
 5. Na succes: signed sessie cookie (`baby_session`) + redirect
 
+## Bewerkbare e-mails
+
+1. Alleen admins (sessie + CSRF) mogen sjablonen bewerken en eigen e-mails versturen
+2. HTML wordt gesaneerd met `sanitize-html` (allowlist; geen scripts, formulieren, iframes, event handlers of `javascript:`-links) bij opslaan én bij renderen
+3. Plaatsaanduidingen worden HTML-geëscapet; onbekende plaatsaanduidingen en een ontbrekende `{{link}}` worden bij opslaan geweigerd
+4. Ongeldige of onleesbare override valt terug op de standaardtekst (admin-inloglink blijft werken)
+5. Voorbeeld in een `sandbox=""` iframe (geen scripts)
+6. Eigen sjablonen: bevestiging verplicht bij versturen, max. 200 ontvangers, ontvangers worden vóór opslaan gevalideerd, idempotency key per verzending en ontvanger, deelnemergegevens worden server-side uit de DB gelezen; verwijderen vraagt om bevestiging en is alleen met adminsessie + CSRF mogelijk
+7. Auditlog zonder PII (`[admin-audit] email_template_saved`, `custom_email_sent`, ...)
+
 ## Autorisatie
 
 1. **Gast**: alleen eigen data via `session.sub` (participant ID)
@@ -39,8 +49,9 @@ In-memory `Map` (key → `{ count, resetAt }`). Keys:
 - `code:{ip}` — toegangscode pogingen: 15 / 10 min
 - `mail:{ip}` — magic link aanvragen: 10 / 10 min
 - `verify:{ip}` — verificatie pogingen: (via magic link token expiry)
-- `admin-reminder:{adminId}` — enkele herinneringen: 60 / 10 min
-- `admin-reminder-bulk:{adminId}` — bulk herinneringen: 5 / 10 min
+- `admin-template:{adminId}` — sjabloon opslaan/herstellen: 30 / 10 min
+- `admin-template-test:{adminId}` / `admin-custom-test:{adminId}` — testmails: 10 / 10 min
+- `admin-custom-send:{adminId}` — e-mail versturen naar deelnemers (eigen sjablonen en systeemmails): 3 / 10 min
 
 **Let op**: in-memory werkt niet over meerdere instances. Voor productie met schaling: Redis/Valkey.
 

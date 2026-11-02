@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { readAdminSession } from "@/lib/session";
 import { purgeAllAction } from "@/app/admin/actions";
 import { getCsrfToken } from "@/lib/csrf";
-import { BackButton } from "@/components/BackButton";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { ConfirmClearForm } from "@/components/admin/ConfirmClearForm";
 import { CLEAR_ALL_PHRASE } from "@/lib/admin-clear-phrases";
@@ -62,7 +61,6 @@ export default async function AdminDashboardPage({ searchParams }: AdminDashboar
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-12">
       <div className="baby-card p-6 sm:p-8">
-        <BackButton />
         <div className="mb-6 flex items-center gap-3">
           <span className="baby-emoji text-xl" aria-hidden="true">🔐</span>
           <p className="baby-tag text-[0.62rem]">admin</p>

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { sendAddressReminder } from "@/lib/email";
+import { sendAddressReminder, sendMagicLink } from "@/lib/email";
 import { getEnv } from "@/lib/env";
 import { generateRandomToken, sha256Hex } from "@/lib/security";
 
@@ -70,5 +70,40 @@ export async function sendReminderTo(participantId: string): Promise<ReminderRes
     data: { reminderSentAt: new Date() },
   });
 
+  return "sent";
+}
+
+// Sends a fresh guest login link to an existing participant; throws if delivery fails.
+export async function sendGuestLinkTo(participantId: string): Promise<ReminderResult> {
+  const participant = await prisma.participant.findUnique({
+    where: { id: participantId },
+    select: { id: true, name: true, email: true },
+  });
+  if (!participant) {
+    return "skipped";
+  }
+
+  const env = getEnv();
+  const token = generateRandomToken();
+  await prisma.magicLinkToken.create({
+    data: {
+      email: participant.email,
+      tokenHash: sha256Hex(token),
+      purpose: "guest_login",
+      expiresAt: new Date(Date.now() + env.MAGIC_LINK_TTL_MINUTES * 60 * 1000),
+      participantId: participant.id,
+    },
+  });
+
+  const url = new URL("/api/auth/verify", env.APP_BASE_URL);
+  url.searchParams.set("token", token);
+  url.searchParams.set("email", participant.email);
+  if (participant.name) {
+    url.searchParams.set("name", participant.name);
+  }
+  url.searchParams.set("scope", "guest");
+  url.searchParams.set("next", "/");
+
+  await sendMagicLink({ email: participant.email, link: url.toString(), purpose: "guest" });
   return "sent";
 }

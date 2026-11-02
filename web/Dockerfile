@@ -41,6 +41,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
 
+# Placed late so a new SHA only invalidates the last layers.
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000

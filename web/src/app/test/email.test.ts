@@ -19,6 +19,10 @@ vi.mock("@/lib/security", () => ({
   sha256Hex: vi.fn(() => "link-hash"),
 }));
 
+vi.mock("@/lib/db", () => ({
+  prisma: { emailTemplate: { findUnique: vi.fn().mockResolvedValue(null) } },
+}));
+
 import { sendAddressReminder, sendMagicLink, sendTestEmail } from "@/lib/email";
 
 describe("transactionele e-mail", () => {

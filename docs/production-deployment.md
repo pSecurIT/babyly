@@ -343,10 +343,42 @@ PostgreSQL 16-service en past de gecommitete Prisma-migraties toe.
 
 Een succesvolle push naar `main` start daarna
 `.github/workflows/deploy.yml`. De productieomgeving in GitHub moet een
-verplichte goedkeuring hebben. Deployments worden geserialiseerd en zetten
-precies de SHA van de geteste workflow-run uit op de server. De actie voert
-Prisma-migraties uit, bouwt de Compose-stack opnieuw op en controleert daarna
-de HTTPS-homepage.
+verplichte goedkeuring hebben. Deployments worden geserialiseerd (GitHub houdt
+per keer maar één wachtende run over, dus de nieuwste commit wint) en zetten
+precies de SHA van de geteste workflow-run uit op de server. Alleen pushes van
+dezelfde repository op `main` starten een deploy; fork-PR's niet.
+
+De deploy is zo opgezet dat een eerdere mislukte deploy de volgende niet blokkeert:
+
+- Slot op de server (`flock`) tegen overlappende deploys, controle op vrije
+  schijfruimte (opruimen bij minder dan 3 GB) en `git fetch` met herpogingen.
+- `git checkout --force`, dus lokale wijzigingen op de server blokkeren niet.
+- Een commit die ouder is dan de laatst uitgerolde (`.last-deployed-sha`) wordt
+  overgeslagen; een handmatige run (`workflow_dispatch`) mag wel een oudere SHA
+  uitrollen.
+- Het image wordt eerst gebouwd; daarna controleert `prisma migrate status` op een
+  eerder mislukte migratie en stopt met een duidelijke melding (zie hieronder),
+  voert `migrate deploy` uit en controleert dat het schema up-to-date is.
+- Daarna volgt `docker compose up -d`; app, db en caddy moeten blijven draaien.
+
+Daarna draait `scripts/smoke-test.sh` tegen `DEPLOY_SMOKE_URL`:
+
+- `/api/health` meldt `ok` (app en database bereikbaar) en de draaiende build
+  (`GIT_SHA`) komt overeen met de uitgerolde commit.
+- `/`, `/privacy` en `/admin/login` geven 200 met HTML.
+- Alle adminpagina's (incl. e-mail) sturen zonder sessie door naar de login en de
+  exportroutes geven 401/403.
+- Security headers (CSP, nosniff, referrer-policy, HSTS), HTTP→HTTPS-redirect en
+  een TLS-certificaat dat nog minstens 7 dagen geldig is.
+
+### Waarschuwingen bij mislukken
+
+Bij een mislukte deploy, een mislukte smoke test of een mislukte CI-run op `main`
+opent de workflow een GitHub-issue met het label `deploy-failed` (of voegt een
+reactie toe aan het open issue). GitHub mailt de watchers van de repository.
+Zodra een deploy slaagt en de smoke test haalt, wordt het issue automatisch
+gesloten met een "Recovered"-reactie. Zet notificaties voor issues aan voor
+de mensen die dit moeten zien.
 
 Configureer in de beschermde GitHub Environment `production` uitsluitend deze
 secrets:
@@ -372,8 +404,29 @@ zeven dagen en alleen als testoutput.
 
 ### Rollback
 
-Automatische rollback is bewust niet ingeschakeld. Noteer vóór elke productie-
-goedkeuring de vorige bekende goede commit-SHA. Bij een regressie log je in als
-`deploy`, controleer je de oorzaak en zet je `/opt/babyly` handmatig terug naar
-die SHA, waarna je vanuit `/opt/babyly/web` `docker compose up -d --build`
-uitvoert. Controleer daarna opnieuw HTTPS en de relevante gebruikersflow.
+Als de deploy of de smoke test mislukt nadat de containers zijn vervangen,
+zet de workflow automatisch de vorige commit terug (`docker compose up -d
+--build`), herstelt `.last-deployed-sha` en draait de smoke test opnieuw. Het issue
+meldt of het herstel gelukt is. De database wordt niet teruggedraaid, dus
+houd migraties achterwaarts compatibel (eerst toevoegen, pas in een latere
+release verwijderen). Bij de allereerste deploy met `/api/health` kan het
+herstel naar een oudere versie zonder die route niet slagen omdat die versie
+daar nog geen antwoord op geeft.
+
+Handmatig terugzetten kan via *Actions → Deploy production → Run workflow* met
+de gewenste commit-SHA van `main` (volledige 40 tekens). Een handmatige run
+slaat de controle op oudere commits over.
+
+### Mislukte migratie herstellen
+
+Een half mislukte Prisma-migratie blokkeert alle volgende deploys; de workflow
+meldt dit expliciet. Los de oorzaak op de server op en voer vanuit
+`/opt/babyly/web` uit:
+
+```bash
+docker compose run --rm --user root app node_modules/.bin/prisma migrate resolve \
+  --rolled-back <migratienaam> --schema=/app/prisma/schema.prisma
+```
+
+(gebruik `--applied` als de migratie wel volledig is uitgevoerd) en start de
+workflow opnieuw.

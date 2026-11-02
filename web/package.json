@@ -20,19 +20,23 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "html-to-text": "^10.0.1",
     "next": "^16.3.4",
     "pg": "^8.23.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "resend": "^6.24.0",
+    "sanitize-html": "^2.18.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
+    "@types/html-to-text": "^9.0.4",
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.2",
     "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.13.0",
     "eslint-config-next": "^16.3.4",

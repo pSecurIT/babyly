@@ -54,14 +54,25 @@ Security en privacy krijgen hoogste prioriteit. Alle tests moeten herhaalbaar zi
 - [ ] Validatie: alle required velden
 - [ ] CSRF/sessie checks identiek aan voorspelling
 
-### Feature C: Adres-herinneringen (`src/lib/reminders.test.ts`, `src/app/test/admin-reminders.test.ts`, `email.test.ts`)
+### Feature C: Adres-herinneringen (`src/lib/reminders.test.ts`, `src/app/test/admin-email-actions.test.ts`, `email.test.ts`)
 - [x] Doelgroep: alleen deelnemers met voorspelling en zonder adres
 - [x] Cooldown van 7 dagen; adres en cooldown worden vlak voor verzending opnieuw gecontroleerd
 - [x] Magic link: alleen hash opgeslagen, TTL 7 dagen, `next=/deelnemen/adres/formulier`
-- [x] Admin sessie + CSRF + bevestiging (bulk); bulk telt verzonden/overgeslagen/mislukt
+- [x] Admin sessie + CSRF + bevestiging; verzending telt verzonden/overgeslagen/mislukt (via `sendEmailAction`)
 - [x] `reminderSentAt` alleen gezet na geslaagde verzending
 - [x] E-mail: Resend-pad, HTML-escaping, console-modus, foutnormalisatie
-- [x] CSRF-token in beide formulieren op `/admin/email`
+- [x] CSRF-token in het verzendformulier (`SendEmailForm`)
+
+### Feature D: E-mailsjablonen en eigen e-mails (`email-templates.test.ts`, `custom-email.test.ts`, `admin-email-actions.test.ts`)
+- [x] Sanering verwijdert scripts, event handlers en `javascript:`-links
+- [x] Plaatsaanduidingen geëscapet in HTML, ongeëscapet in onderwerp
+- [x] Tekstversie automatisch uit HTML
+- [x] Terugval op standaardtekst bij ontbrekende/ongeldige override of DB-fout
+- [x] Validatie: verplichte `{{link}}`, onbekende plaatsaanduidingen, onderwerp zonder regeleinden
+- [x] Admin sessie + CSRF op alle acties
+- [x] Eigen sjabloon: bevestiging verplicht, verzending gelogd, ontvangers gededupliceerd
+- [x] Opslaan als nieuw sjabloon wijzigt het origineel niet; verwijderen vereist sessie + CSRF
+- [ ] E2E: sjabloon bewerken, voorbeeld bekijken en testmail
 
 ### Cross-prompting
 - [ ] Na voorspelling: bedankpagina toont adres-knop
