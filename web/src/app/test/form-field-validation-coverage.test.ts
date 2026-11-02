@@ -5,7 +5,7 @@ import { knownValidatedFieldNames } from "@/lib/validation";
 
 // Fields that are intentionally not free-text data validated via a zod schema:
 // CSRF token, bot honeypot, and a hidden id copied back from the server.
-const EXEMPT_FIELD_NAMES = new Set(["csrfToken", "website", "participantId"]);
+const EXEMPT_FIELD_NAMES = new Set(["csrfToken", "website", "participantId", "id"]);
 
 function findPageFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

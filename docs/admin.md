@@ -50,13 +50,26 @@ Kolommen: Naam ontvanger, Adres, Postcode, Woonplaats, Land, Deelnemer, Ingevuld
 - **Mail CSV naar admins**: `mailAddressesCsvAction` → verstuurt CSV als bijlage naar alle adressen in `ADMIN_EMAILS`
 - **Adressen wissen**: `clearAddressesAction` → `prisma.addressCard.deleteMany({})`; vereist getypte bevestigingszin `VERWIJDER ADRESSEN`. Deelnemers en voorspellingen blijven bestaan.
 
-## Tabblad E-mail (`/admin/email`, `src/app/admin/email/page.tsx`)
-Lijst van deelnemers met voorspelling maar zonder adres (`findReminderTargets` in `src/lib/reminders.ts`).
-- **Herinner (per rij)**: `sendAddressReminderAction`
-- **Herinner iedereen**: `sendAllAddressRemindersAction` (checkbox-bevestiging, sequentieel, telt verzonden/overgeslagen/mislukt)
-- Elke mail bevat een persoonlijke magic link (7 dagen geldig, eenmalig) naar `/deelnemen/adres/formulier`.
-- Adres en cooldown (max. 1 herinnering per 7 dagen, `Participant.reminderSentAt`) worden vlak voor verzending opnieuw gecontroleerd.
+## Tabblad E-mail (`/admin/email`)
+Twee subtabs: **Versturen** (`/admin/email`) en **Sjablonen** (`/admin/email/sjablonen`, `nieuw`, `bericht/[id]`, `sjablonen/[key]`).
+
+### Versturen (`src/app/admin/email/page.tsx`, `SendEmailForm`)
+- Dropdown met eigen sjablonen en de verstuurbare systeemmails (adres-herinnering, inloglink deelnemer); de keuze staat in `?sjabloon=`.
+- Daaronder: voorbeeld, deelnemerslijst met filters/zoeken/selecteer alles, bevestigingsvakje en Versturen (`sendEmailAction`).
+- Eigen sjablonen: ook extra e-mailadressen mogelijk; elke verzending wordt gelogd in `CustomEmailSend` + `CustomEmailRecipient`. Max. 200 ontvangers.
+- **Adres-herinnering**: per ontvanger `sendReminderTo` (persoonlijke link, 7 dagen geldig, eenmalig, naar `/deelnemen/adres/formulier`). Alleen deelnemers met voorspelling en zonder adres, met max. 1 herinnering per 7 dagen (`Participant.reminderSentAt`), worden aangeschreven; anderen worden overgeslagen (cooldown en adres worden vlak voor verzending opnieuw gecontroleerd). De lijst start gefilterd op "voorspelling, zonder adres".
+- **Inloglink deelnemer**: per ontvanger een nieuwe inloglink (`sendGuestLinkTo`).
+- Andere systeemmails (adminlink, CSV-exports, testmail) kunnen niet naar deelnemers worden verstuurd.
 - Rate limiting per admin; auditlog zonder PII.
+
+### Sjablonen en eigen e-mails (`src/app/admin/email/`)
+- `/admin/email/sjablonen`: dropdown om een nieuw sjabloon te maken (leeg of als kopie van een eigen sjabloon of systeemmail) en lijsten met eigen sjablonen en systeemmails.
+- Systeemmails (`/admin/email/sjablonen/[key]`): alle 6 verstuurde mails (gast-/adminlink, adres-herinnering, 2 CSV-exports, testmail) zijn als HTML te bewerken met live voorbeeld (sandboxed iframe), testmail naar jezelf en "standaardtekst herstellen" (met bevestiging).
+- Opslag in `EmailTemplate`; standaardteksten staan in `src/lib/email-template-defs.ts`. Een ontbrekende of ongeldige override valt terug op de standaardtekst (admin-inloglink kan dus niet breken).
+- Plaatsaanduidingen: `{{link}}`, `{{name}}`, `{{email}}`, `{{greeting}}` (waarden worden HTML-geëscapet); `{{link}}` is verplicht bij link-mails en niet beschikbaar in eigen sjablonen.
+- HTML wordt gesaneerd (`sanitize-html`); de tekstversie wordt automatisch uit de HTML gegenereerd (`html-to-text`).
+- Eigen sjablonen (`CustomEmail`, `/admin/email/nieuw?van=...` en `/admin/email/bericht/[id]`) zijn herbruikbaar: opslaan, "opslaan als nieuw sjabloon" en testmail; versturen gaat via de subtab Versturen.
+- Verwijderen van een eigen sjabloon vraagt om bevestiging en verwijdert ook de verzendgeschiedenis.
 
 ## Beheeracties (Server Actions, `src/app/admin/actions.ts`)
 
@@ -71,8 +84,6 @@ Lijst van deelnemers met voorspelling maar zonder adres (`findReminderTargets` i
 | `clearAddressesAction` | `prisma.addressCard.deleteMany({})` | Admin sessie + CSRF + bevestigingszin |
 | `mailPredictionsCsvAction` | Bouwt CSV + `sendCsvEmail` naar `adminEmailSet()` | Admin sessie + CSRF |
 | `mailAddressesCsvAction` | Bouwt CSV + `sendCsvEmail` naar `adminEmailSet()` | Admin sessie + CSRF |
-| `sendAddressReminderAction` | `sendReminderTo(participantId)`: magic link (7 dgn) + `sendAddressReminder` | Admin sessie + CSRF + rate limit + adres/cooldown hercheck |
-| `sendAllAddressRemindersAction` | Loopt sequentieel over `findReminderTargets()` | Admin sessie + CSRF + bevestiging + rate limit |
 
 ## Veiligheidsregels
 1. **Alle admin routes**: `readAdminSession()` check vóór elke actie

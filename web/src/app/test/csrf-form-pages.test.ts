@@ -8,6 +8,7 @@ const { mockPrisma, mockReadAdminSession, mockReadGuestSession } = vi.hoisted(()
     participant: { count: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
     prediction: { count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
     addressCard: { findMany: vi.fn(), findUnique: vi.fn(), count: vi.fn() },
+    customEmail: { findMany: vi.fn().mockResolvedValue([]) },
   },
   mockReadAdminSession: vi.fn(),
   mockReadGuestSession: vi.fn(),
@@ -39,13 +40,12 @@ vi.mock("@/app/admin/actions", () => ({
   clearAddressesAction: vi.fn(),
   mailPredictionsCsvAction: vi.fn(),
   mailAddressesCsvAction: vi.fn(),
-  sendAddressReminderAction: vi.fn(),
-  sendAllAddressRemindersAction: vi.fn(),
   resetAddressAction: vi.fn(),
   deleteAddressParticipantAction: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
   redirect: (path: string) => {
     throw new Error(`redirect:${path}`);
   },
@@ -131,9 +131,7 @@ async function renderPages() {
   );
   const adminAddresses = renderToStaticMarkup(await AdminAddressesPage({ searchParams: Promise.resolve({}) }));
 
-  mockPrisma.participant.findMany.mockResolvedValueOnce([
-    { id: "participant-2", name: "Anna", email: "anna@example.com", reminderSentAt: null, createdAt: new Date() },
-  ]);
+  mockPrisma.participant.findMany.mockResolvedValue([]);
   const adminEmail = renderToStaticMarkup(await AdminEmailPage({ searchParams: Promise.resolve({}) }));
 
   return { home, adminLogin, prediction, address, admin, adminPredictions, adminAddresses, adminEmail };
@@ -157,6 +155,11 @@ describe("CSRF-dekking van paginaformulieren", () => {
     }
   });
 
+  it("stuurt het CSRF-token mee in het verzendformulier van e-mails", () => {
+    const source = readFileSync(join(__dirname, "../../components/admin/SendEmailForm.tsx"), "utf8");
+    expect((source.match(/<form\b/g) ?? []).length).toBe((source.match(/name="csrfToken"/g) ?? []).length);
+  });
+
   it("voegt aan elk muterend formulier een server-token toe", async () => {
     const pages = await renderPages();
     const expectedFormCounts = {
@@ -167,7 +170,7 @@ describe("CSRF-dekking van paginaformulieren", () => {
       admin: 1,
       adminPredictions: 4,
       adminAddresses: 4,
-      adminEmail: 2,
+      adminEmail: 0,
     };
 
     for (const [page, html] of Object.entries(pages)) {

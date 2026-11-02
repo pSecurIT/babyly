@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 import { adminEmailSet, getEnv } from "@/lib/env";
+import { buildGreeting, SAMPLE_VALUES, type PlaceholderName, type TemplateKey } from "@/lib/email-template-defs";
+import { renderEmailContent, renderTemplate, type RenderedEmail } from "@/lib/email-templates";
 import { sha256Hex } from "@/lib/security";
 
 type SendMagicLinkInput = {
@@ -9,64 +11,10 @@ type SendMagicLinkInput = {
 };
 
 type SendCsvEmailInput = {
-  subject: string;
+  template: "csv_predictions" | "csv_addresses";
   filename: string;
   csv: string;
 };
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function magicLinkHtml(input: SendMagicLinkInput): string {
-  const safeLink = escapeHtml(input.link);
-  const title = input.purpose === "admin"
-    ? "Je Babyly-adminlink is er"
-    : "Klaar voor een klein Babyly-moment?";
-  const intro = input.purpose === "admin"
-    ? "Met deze link open je veilig de Babyly-adminomgeving."
-    : "Met deze link ga je veilig verder naar jouw Babyly-avontuur.";
-  const buttonLabel = input.purpose === "admin"
-    ? "Adminomgeving openen"
-    : "Naar Babyly gaan";
-
-  return `<!doctype html>
-<html lang="nl">
-  <body style="margin:0;background:#f3fbf1;color:#244a37;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:32px 16px;background:#f3fbf1;background-image:radial-gradient(circle at 12% 8%,#dff5d9 0,transparent 22%),radial-gradient(circle at 88% 10%,#fff1c9 0,transparent 20%);">
-      <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Je eenmalige Babyly-link staat voor je klaar.</div>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;margin:0 auto;">
-        <tr>
-          <td style="padding:0 0 16px;text-align:center;">
-            <span style="display:inline-block;padding:12px 20px;border-radius:24px;background:#ffffff;color:#234a37;font-size:24px;font-weight:800;letter-spacing:-.5px;box-shadow:0 8px 20px rgba(61,94,72,.10);">👶 Babyly</span>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:36px 32px;border:2px solid #cfecc7;border-radius:28px;background:#ffffff;box-shadow:0 18px 40px rgba(61,94,72,.14);">
-            <div style="margin-bottom:24px;text-align:center;font-size:34px;line-height:1;">🌼 ✨ 🌱</div>
-            <p style="margin:0 0 10px;text-align:center;color:#4a9d61;font-size:12px;font-weight:800;letter-spacing:3px;text-transform:uppercase;">een klein berichtje</p>
-            <h1 style="margin:0;text-align:center;color:#234a37;font-size:30px;line-height:1.2;">${title}</h1>
-            <p style="margin:20px 0 0;text-align:center;color:#3c594b;font-size:17px;line-height:1.6;">${intro}</p>
-            <div style="margin:28px 0;padding:18px 20px;border:1px solid #f8d88b;border-radius:18px;background:#fff8df;color:#5f4d1a;text-align:center;font-size:15px;line-height:1.5;">Deze link is tijdelijk geldig en kan maar één keer worden gebruikt.</div>
-            <div style="text-align:center;">
-              <a href="${safeLink}" style="display:inline-block;padding:16px 26px;border-radius:20px;background:#67c96f;color:#ffffff;font-size:17px;font-weight:800;text-decoration:none;box-shadow:0 10px 22px rgba(84,157,100,.28);">${buttonLabel} →</a>
-            </div>
-            <p style="margin:26px 0 0;color:#6c8576;text-align:center;font-size:13px;line-height:1.5;">Werkt de knop niet? Kopieer dan deze link naar je browser:<br><span style="color:#4a9d61;word-break:break-all;">${safeLink}</span></p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:20px 16px 0;color:#6c8576;text-align:center;font-size:12px;line-height:1.5;">Met liefde gemaakt voor dit bijzondere geboortemoment 💚</td>
-        </tr>
-      </table>
-    </div>
-  </body>
-</html>`;
-}
 
 export async function sendMagicLink(input: SendMagicLinkInput) {
   const env = getEnv();
@@ -74,22 +22,16 @@ export async function sendMagicLink(input: SendMagicLinkInput) {
   if (env.EMAIL_DELIVERY_MODE === "provider") {
     const resend = new Resend(env.RESEND_API_KEY);
     try {
-      const text = [
-        "Hallo,",
-        "",
-        "Gebruik deze eenmalige link om verder te gaan:",
-        input.link,
-        "",
-        "De link is tijdelijk geldig en kan maar eenmaal worden gebruikt.",
-      ].join("\n");
+      const rendered = await renderTemplate(
+        input.purpose === "admin" ? "admin_magic_link" : "guest_magic_link",
+        { link: input.link, email: input.email },
+      );
       const result = await resend.emails.send({
         from: env.EMAIL_FROM!,
         to: [input.email],
-        subject: input.purpose === "admin"
-          ? "Je eenmalige Babyly-adminlink"
-          : "Je eenmalige Babyly-link",
-        text,
-        html: magicLinkHtml(input),
+        subject: rendered.subject,
+        text: rendered.text,
+        html: rendered.html,
       }, {
         idempotencyKey: `magic-link/${sha256Hex(input.link)}`,
       });
@@ -118,32 +60,6 @@ type SendAddressReminderInput = {
   link: string;
 };
 
-function addressReminderHtml(input: SendAddressReminderInput): string {
-  const safeLink = escapeHtml(input.link);
-  const greeting = input.name ? `Hoi ${escapeHtml(input.name)},` : "Hoi,";
-
-  return `<!doctype html>
-<html lang="nl">
-  <body style="margin:0;background:#f3fbf1;color:#244a37;font-family:Arial,Helvetica,sans-serif;">
-    <div style="padding:32px 16px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;margin:0 auto;">
-        <tr>
-          <td style="padding:36px 32px;border:2px solid #cfecc7;border-radius:28px;background:#ffffff;">
-            <h1 style="margin:0;text-align:center;color:#234a37;font-size:28px;line-height:1.2;">Een kaartje voor de baby? 💌</h1>
-            <p style="margin:20px 0 0;color:#3c594b;font-size:17px;line-height:1.6;">${greeting}</p>
-            <p style="margin:12px 0 0;color:#3c594b;font-size:17px;line-height:1.6;">Bedankt voor je voorspelling! Je hebt nog geen adres achtergelaten. Vul het in, dan sturen we je een kaartje zodra de baby er is.</p>
-            <div style="margin:28px 0;text-align:center;">
-              <a href="${safeLink}" style="display:inline-block;padding:16px 26px;border-radius:20px;background:#67c96f;color:#ffffff;font-size:17px;font-weight:800;text-decoration:none;">Adres invullen →</a>
-            </div>
-            <p style="margin:0;color:#6c8576;text-align:center;font-size:13px;line-height:1.5;">Deze persoonlijke link is tijdelijk geldig en kan maar één keer worden gebruikt.<br>Werkt de knop niet? Kopieer dan deze link:<br><span style="color:#4a9d61;word-break:break-all;">${safeLink}</span></p>
-          </td>
-        </tr>
-      </table>
-    </div>
-  </body>
-</html>`;
-}
-
 export async function sendAddressReminder(input: SendAddressReminderInput) {
   const env = getEnv();
 
@@ -153,23 +69,20 @@ export async function sendAddressReminder(input: SendAddressReminderInput) {
   }
 
   const resend = new Resend(env.RESEND_API_KEY);
-  const text = [
-    input.name ? `Hoi ${input.name},` : "Hoi,",
-    "",
-    "Bedankt voor je voorspelling! Je hebt nog geen adres achtergelaten.",
-    "Vul het in via onderstaande link, dan sturen we je een kaartje zodra de baby er is:",
-    input.link,
-    "",
-    "De link is tijdelijk geldig en kan maar eenmaal worden gebruikt.",
-  ].join("\n");
 
   try {
+    const rendered = await renderTemplate("address_reminder", {
+      link: input.link,
+      email: input.email,
+      name: input.name ?? "",
+      greeting: buildGreeting(input.name),
+    });
     const result = await resend.emails.send({
       from: env.EMAIL_FROM!,
       to: [input.email],
-      subject: "Laat je adres achter voor een kaartje van Babyly",
-      text,
-      html: addressReminderHtml(input),
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
     }, {
       idempotencyKey: `address-reminder/${input.participantId}/${new Date().toISOString().slice(0, 10)}`,
     });
@@ -196,12 +109,13 @@ export async function sendTestEmail() {
   console.info("[email-test] sending");
 
   try {
+    const rendered = await renderTemplate("test_email", {});
     const result = await resend.emails.send({
       from: env.EMAIL_FROM,
       to: [env.EMAIL_TEST_RECIPIENT],
-      subject: "Babyly e-mailtest",
-      text: "Dit is een testmail van Babyly. De Resend-integratie werkt.",
-      html: "<p>Dit is een testmail van Babyly.</p><p>De Resend-integratie werkt.</p>",
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
     }, { idempotencyKey });
 
     if (result.error || !result.data?.id) {
@@ -233,11 +147,13 @@ export async function sendCsvEmail(input: SendCsvEmailInput) {
   const idempotencyKey = `csv-email/${Date.now()}/${crypto.randomUUID()}`;
 
   try {
+    const rendered = await renderTemplate(input.template, {});
     const result = await resend.emails.send({
       from: env.EMAIL_FROM!,
       to: recipients,
-      subject: input.subject,
-      text: "In de bijlage vind je het gevraagde CSV-bestand.",
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
       attachments: [{ filename: input.filename, content: Buffer.from(input.csv, "utf8") }],
     }, { idempotencyKey });
 
@@ -250,5 +166,63 @@ export async function sendCsvEmail(input: SendCsvEmailInput) {
   } catch {
     console.error("[email] csv_export_failed");
     throw new Error("CSV-mail kon niet worden verstuurd.");
+  }
+}
+
+type SendCustomEmailInput = {
+  to: string;
+  name: string | null;
+  subject: string;
+  html: string;
+  idempotencyKey: string;
+};
+
+// Renders per recipient so {{name}}/{{email}} are filled in individually.
+export async function sendCustomEmail(input: SendCustomEmailInput) {
+  const values: Partial<Record<PlaceholderName, string>> = {
+    name: input.name ?? "",
+    email: input.to,
+    greeting: buildGreeting(input.name),
+  };
+  const rendered = renderEmailContent(input.subject, input.html, values);
+  await deliverRendered(input.to, rendered, input.idempotencyKey, "custom_email");
+}
+
+// Sends the draft with sample data so admins can check it in a real mailbox.
+export async function sendTemplatePreview(key: TemplateKey | "custom", to: string, subject: string, html: string) {
+  const rendered = renderEmailContent(subject, html, SAMPLE_VALUES);
+  await deliverRendered(
+    to,
+    { ...rendered, subject: `[TEST] ${rendered.subject}` },
+    `template-preview/${key}/${Date.now()}/${crypto.randomUUID()}`,
+    "template_preview",
+  );
+}
+
+async function deliverRendered(to: string, rendered: RenderedEmail, idempotencyKey: string, logTag: string) {
+  const env = getEnv();
+  if (env.EMAIL_DELIVERY_MODE !== "provider") {
+    console.info(`[${logTag}:local] ${rendered.subject}`);
+    return;
+  }
+
+  const resend = new Resend(env.RESEND_API_KEY);
+  try {
+    const result = await resend.emails.send({
+      from: env.EMAIL_FROM!,
+      to: [to],
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+    }, { idempotencyKey });
+
+    if (result.error) {
+      console.error(`[email] ${logTag}_rejected`);
+      throw new Error("E-mail kon niet worden verstuurd.");
+    }
+    console.info(`[email] ${logTag}_sent`, { messageId: result.data?.id ?? "unknown" });
+  } catch {
+    console.error(`[email] ${logTag}_failed`);
+    throw new Error("E-mail kon niet worden verstuurd.");
   }
 }

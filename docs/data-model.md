@@ -78,6 +78,47 @@ Synced met `ACCESS_CODE` env var op startup (`syncAccessCodeFromEnv`)
 |------|------|-------------|
 | id | String | PK, `@default(cuid())` |
 | email | String | `@unique`, exact 2 entries |
+
+### email_templates
+| Veld | Type | Constraints |
+|------|------|-------------|
+| key | String | PK, bv. `guest_magic_link` (zie `TEMPLATE_KEYS`) |
+| subject | String | Onderwerp, mag plaatsaanduidingen bevatten |
+| html | String | Gesaneerde HTML met `{{placeholders}}` |
+| updatedBy | String | Admin-e-mail |
+| updatedAt | DateTime | `@updatedAt` |
+
+Geen rij = standaardtekst uit `src/lib/email-template-defs.ts`.
+
+### custom_emails
+| Veld | Type | Constraints |
+|------|------|-------------|
+| id | String | PK, `@default(cuid())` |
+| name | String | Naam van het sjabloon |
+| subject / html | String | Inhoud (HTML gesaneerd opgeslagen) |
+| createdBy | String | Admin-e-mail |
+| createdAt / updatedAt | DateTime | |
+
+### custom_email_sends
+| Veld | Type | Constraints |
+|------|------|-------------|
+| id | String | PK, `@default(cuid())` |
+| customEmailId | String | FK → custom_emails.id (Cascade) |
+| subject | String | Onderwerp op moment van verzenden |
+| sentBy | String | Admin-e-mail |
+| sentAt | DateTime | `@default(now())` |
+
+### custom_email_recipients
+| Veld | Type | Constraints |
+|------|------|-------------|
+| id | String | PK, `@default(cuid())` |
+| sendId | String | FK → custom_email_sends.id (Cascade) |
+| email | String | Ontvanger (deelnemer of extra adres) |
+| name | String? | Null bij extra adres |
+| status | String | `sent` \| `failed` |
+| createdAt | DateTime | `@default(now())` |
+
+**Unique**: `(sendId, email)`
 | createdAt | DateTime | `@default(now())` |
 
 ## Constraints (server-side afgedwongen)

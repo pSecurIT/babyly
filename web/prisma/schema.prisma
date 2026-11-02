@@ -101,3 +101,53 @@ model AdminAllowlist {
 
   @@map("admin_allowlist")
 }
+
+model EmailTemplate {
+  key       String   @id
+  subject   String
+  html      String
+  updatedBy String
+  updatedAt DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+model CustomEmail {
+  id        String            @id @default(cuid())
+  name      String
+  subject   String
+  html      String
+  createdBy String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  sends     CustomEmailSend[]
+
+  @@map("custom_emails")
+}
+
+model CustomEmailSend {
+  id            String                 @id @default(cuid())
+  customEmailId String
+  customEmail   CustomEmail            @relation(fields: [customEmailId], references: [id], onDelete: Cascade)
+  subject       String
+  sentBy        String
+  sentAt        DateTime               @default(now())
+  recipients    CustomEmailRecipient[]
+
+  @@index([customEmailId])
+  @@map("custom_email_sends")
+}
+
+model CustomEmailRecipient {
+  id        String          @id @default(cuid())
+  sendId    String
+  send      CustomEmailSend @relation(fields: [sendId], references: [id], onDelete: Cascade)
+  email     String
+  name      String?
+  // sent | failed
+  status    String
+  createdAt DateTime        @default(now())
+
+  @@unique([sendId, email])
+  @@map("custom_email_recipients")
+}

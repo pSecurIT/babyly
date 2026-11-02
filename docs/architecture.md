@@ -9,7 +9,7 @@ Eenvoudige, veilige Nederlandstalige website met twee losse gebruikersflows:
 1. **Frontend**: Next.js 16 App Router (React 19), Server Components + Server Actions
 2. **Backend**: Server Actions (`src/app/deelnemen/actions.ts`, `src/app/admin/actions.ts`) + API routes (`src/app/api/`)
 3. **Database**: PostgreSQL via Prisma ORM (schema in `prisma/schema.prisma`)
-4. **E-mailservice**: Resend (production), console log (development)
+4. **E-mailservice**: Resend (production), console log (development); alle teksten via bewerkbare sjablonen (`src/lib/email-templates.ts`, standaardteksten in `src/lib/email-template-defs.ts`)
 5. **Rate limiting**: In-memory `Map` (dev/CI); Redis/Valkey recommended for multi-instance production
 
 ## Trust Boundaries
